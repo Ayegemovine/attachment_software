@@ -9,7 +9,7 @@ from django.core.paginator import Paginator
 from django.conf import settings
 from .models import Attachee, Evaluation, StudentFeedback
 from .forms import AttacheeForm
-import io, qrcode, textwrap, os
+import io, qrcode, textwrap, os, csv
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import inch
@@ -49,12 +49,78 @@ def check_status(request):
     return render(request, 'accounts/check_status.html', {'attachee': attachee})
 
 @user_passes_test(is_admin)
-def dashboard(request):
-    """Enhanced Dashboard with dynamic rows, pagination, and real-time stats"""
+def export_attachees(request):
+    """Generates a CSV of the current filtered list"""
+    status_filter = request.GET.get('status', '')
     search_query = request.GET.get('q', '')
+    
+    attachees = Attachee.objects.all()
+    if search_query:
+        attachees = attachees.filter(
+            Q(first_name__icontains=search_query) | 
+            Q(last_name__icontains=search_query) | 
+            Q(tracking_id__icontains=search_query)
+        )
+    if status_filter:
+        attachees = attachees.filter(status=status_filter)
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = f'attachment; filename="Eujim_Applicants_{timezone.now().date()}.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['Tracking ID', 'First Name', 'Last Name', 'Email', 'Phone', 'Institution', 'Status', 'Applied On'])
+    
+    for a in attachees:
+        writer.writerow([a.tracking_id, a.first_name, a.last_name, a.email, a.phone, a.institution, a.status, a.created_at])
+    
+    return response
+
+@user_passes_test(is_admin)
+def import_attachees(request):
+    """Processes an uploaded CSV file to add records to the database"""
+    if request.method == 'POST' and request.FILES.get('import_file'):
+        csv_file = request.FILES['import_file']
+        if not csv_file.name.endswith('.csv'):
+            messages.error(request, 'Please upload a valid CSV file.')
+            return redirect('dashboard')
+
+        try:
+            file_data = csv_file.read().decode("utf-8")
+            lines = file_data.split("\n")
+            
+            for line in lines[1:]: # Skip header row
+                fields = line.split(",")
+                if len(fields) >= 6:
+                    Attachee.objects.create(
+                        first_name=fields[1].strip(),
+                        last_name=fields[2].strip(),
+                        email=fields[3].strip(),
+                        phone=fields[4].strip(),
+                        institution=fields[5].strip(),
+                        status='Pending'
+                    )
+            messages.success(request, 'Data imported successfully.')
+        except Exception as e:
+            messages.error(request, f'Error processing file: {e}')
+            
+    return redirect('dashboard')
+
+@user_passes_test(is_admin)
+def dashboard(request):
+    """Enhanced Dashboard handling Export, Clickable Stages, and Search"""
+    
+    # 1. CRITICAL: Handle Export before anything else
+    if request.GET.get('export') == 'true':
+        return export_attachees(request)
+
+    search_query = request.GET.get('q', '')
+    status_filter = request.GET.get('status', '')
     rows_per_page = request.GET.get('rows', 5)
+    
+    # 2. Base Queryset
     attachees_list = Attachee.objects.all().order_by('-created_at')
     
+    # 3. Apply Search
     if search_query:
         attachees_list = attachees_list.filter(
             Q(first_name__icontains=search_query) | 
@@ -63,6 +129,11 @@ def dashboard(request):
             Q(email__icontains=search_query)
         )
 
+    # 4. Apply Stage Filter (Clickable Cards)
+    if status_filter:
+        attachees_list = attachees_list.filter(status=status_filter)
+
+    # 5. Pagination
     paginator = Paginator(attachees_list, rows_per_page) 
     page_number = request.GET.get('page')
     attachees = paginator.get_page(page_number)
@@ -73,13 +144,14 @@ def dashboard(request):
         'pending': Attachee.objects.filter(status='Pending').count(),
         'approved': Attachee.objects.filter(status='Approved').count(),
         'rejected': Attachee.objects.filter(status='Rejected').count(), 
+        'completed': Attachee.objects.filter(status='Completed').count(),
         'query': search_query,
+        'status_filter': status_filter,
         'rows': rows_per_page,
     })
 
 @user_passes_test(is_admin)
 def update_status(request, pk):
-    """Allows admin to update status directly from the dashboard modal"""
     if request.method == "POST":
         attachee = get_object_or_404(Attachee, pk=pk)
         new_status = request.POST.get('status')
@@ -148,7 +220,7 @@ def submit_feedback(request, attachee_id):
 # --- PDF BRANDING & UTILITY FUNCTIONS ---
 
 def draw_header_and_border(p):
-    brand_color = (85/255, 212/255, 122/255) # Hex #55D47A
+    brand_color = (85/255, 212/255, 122/255) 
     p.setStrokeColorRGB(*brand_color)
     p.setLineWidth(3); p.rect(0.4*inch, 0.4*inch, 7.5*inch, 10.9*inch)
     p.setLineWidth(1); p.rect(0.45*inch, 0.45*inch, 7.4*inch, 10.8*inch)
@@ -164,7 +236,6 @@ def draw_header_and_border(p):
     p.setFillColorRGB(0, 0, 0)
 
 def draw_footer(p, attachee, current_y):
-    # Dynamic y-coordinate to minimize empty space
     footer_y = current_y 
     sig_path = os.path.join(settings.BASE_DIR, 'static/images/signature.png')
     if os.path.exists(sig_path):
@@ -174,7 +245,6 @@ def draw_footer(p, attachee, current_y):
     p.setFont("Helvetica", 9); p.drawString(0.8*inch, footer_y - 0.3*inch, "CEO and Founder")
     p.drawString(0.8*inch, footer_y - 0.45*inch, "Eujim Solutions Limited")
     
-    # Official Seal
     p.setStrokeColorRGB(0.6, 0.1, 0.1); p.setLineWidth(1.2)
     p.circle(4.15*inch, footer_y - 0.1*inch, 38, stroke=1, fill=0)
     p.setFont("Helvetica-Bold", 7); p.setFillColorRGB(0.6, 0.1, 0.1)
@@ -183,12 +253,10 @@ def draw_footer(p, attachee, current_y):
     p.drawCentredString(4.15*inch, footer_y - 0.25*inch, "VERIFIED")
     p.setStrokeColorRGB(0, 0, 0); p.setFillColorRGB(0, 0, 0)
     
-    # QR Code
     qr = qrcode.make(f"VERIFIED: {attachee.tracking_id}"); qb = io.BytesIO()
     qr.save(qb, format='PNG'); qb.seek(0)
     p.drawImage(ImageReader(qb), 6.5*inch, footer_y - 0.5*inch, width=0.85*inch, height=0.85*inch)
 
-# --- REFINED COMPLETION LETTER (Detailed, Tight Spacing, Addressing "You") ---
 def download_completion_letter(request, attachee_id):
     attachee = get_object_or_404(Attachee, id=attachee_id)
     duration_weeks = (attachee.end_date - attachee.start_date).days // 7
@@ -214,7 +282,6 @@ def download_completion_letter(request, attachee_id):
     p.showPage(); p.save(); buffer.seek(0)
     return FileResponse(buffer, as_attachment=False, content_type='application/pdf', filename=f'Completion_{attachee.tracking_id}.pdf')
 
-# --- REFINED RECOMMENDATION LETTER (Detailed, Tight Spacing, Addressing "You") ---
 def download_recommendation_letter(request, attachee_id):
     attachee = get_object_or_404(Attachee, id=attachee_id)
     duration_weeks = (attachee.end_date - attachee.start_date).days // 7
@@ -240,16 +307,13 @@ def download_recommendation_letter(request, attachee_id):
     p.showPage(); p.save(); buffer.seek(0)
     return FileResponse(buffer, as_attachment=False, content_type='application/pdf', filename=f'Recommendation_{attachee.tracking_id}.pdf')
 
-# --- REFINED GATE PASS (Only for Approved Status, Addressing "You") ---
 def download_gate_pass(request, attachee_id):
     attachee = get_object_or_404(Attachee, id=attachee_id)
-    
     if attachee.status != 'Approved':
         return HttpResponse("Unauthorized: Gate Pass is only available for active, approved attachments.", status=403)
 
     buffer = io.BytesIO(); p = canvas.Canvas(buffer, pagesize=A4); draw_header_and_border(p)
     p.setFont("Helvetica-Bold", 14); p.drawCentredString(4.15*inch, 9.3*inch, "OFFICIAL GATE PASS & ADMISSION LETTER")
-    
     p.setFont("Helvetica-Bold", 11); p.drawString(1.0*inch, 8.8*inch, "APPLICANT DETAILS")
     p.line(1.0*inch, 8.75*inch, 3.0*inch, 8.75*inch)
     
@@ -277,8 +341,7 @@ def download_gate_pass(request, attachee_id):
         f"We are pleased to welcome you, {attachee.first_name}, to EUJIM SOLUTIONS LIMITED. "
         f"During the stated period, you will be an integral part of our team. "
         f"Please note that you are required to report to the office from Monday to Friday, "
-        f"between 9:00 AM and 4:00 PM. You will be off-duty during all "
-        f"gazetted public holidays."
+        f"between 9:00 AM and 4:00 PM."
     )
     
     y_para = y_detail - 0.5*inch

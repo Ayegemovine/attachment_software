@@ -1,4 +1,4 @@
-{% extends "accounts/base.html" %}
+﻿{% extends "accounts/base.html" %}
 {% block content %}
 <style>
     /* Premium Hover Effects */
@@ -7,8 +7,8 @@
     
     /* Search Bar & Rows Dropdown Styling */
     .search-container { max-width: 650px; }
-    .rows-select { border-radius: 50px 0 0 50px !important; border: 2px solid #eee; border-right: none; cursor: pointer; }
-    .search-input { border-radius: 0 !important; border: 2px solid #eee; padding-left: 20px; }
+    .rows-select { border-radius: 50px 0 0 50px !important; border: none; cursor: pointer; background: rgba(255,255,255,0.9) !important; }
+    .search-input { border-radius: 0 !important; border: none; padding-left: 20px; background: rgba(255,255,255,0.9) !important; }
     
     /* BRANDED TRACE BUTTON #55D47A */
     .search-btn { 
@@ -21,84 +21,152 @@
     }
     .search-btn:hover { background-color: #48b868 !important; }
 
-    .reset-btn { border-radius: 0 50px 50px 0 !important; font-weight: bold; padding: 0 20px; }
+    .reset-btn { border-radius: 0 50px 50px 0 !important; font-weight: bold; padding: 0 20px; background: rgba(255,255,255,0.9) !important; border: none !important; }
     
-    /* Action Button Group Styling */
-    .btn-group-pill { border-radius: 50px; overflow: hidden; }
-    .status-badge { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; border-radius: 50px; padding: 5px 12px; }
-    
-    /* Pagination Styling - Updated to #55D47A */
+    /* Pagination Styling */
     .pagination .page-link { color: #55D47A; border: none; margin: 0 5px; border-radius: 50px !important; }
     .pagination .active .page-link { background-color: #55D47A !important; border-color: #55D47A !important; color: white !important; }
+
+    /* Active Filter Highlight */
+    .filter-active { border: 2px solid #55D47A !important; transform: scale(1.02); box-shadow: 0 8px 15px rgba(85, 212, 122, 0.2) !important; }
+
+    /* Ultra-Modern Mesh Gradient Header */
+    .premium-header {
+        background-color: #1a1a1a;
+        background-image: 
+            radial-gradient(at 0% 0%, rgba(85, 212, 122, 0.15) 0px, transparent 50%),
+            radial-gradient(at 100% 100%, rgba(85, 212, 122, 0.1) 0px, transparent 50%),
+            linear-gradient(135deg, #1a1c1e 0%, #2c3e50 100%);
+        border-bottom: 2px solid rgba(85, 212, 122, 0.3) !important;
+        padding: 2rem 2.5rem !important;
+    }
+    .premium-header h4 { color: white !important; letter-spacing: 1px; }
+
+    /* NEW: Enhanced Table Column Headers */
+    .table-header-bg {
+        background: linear-gradient(to right, #f8f9fa, #ffffff) !important;
+        border-bottom: 2px solid #55D47A !important;
+    }
+    .table-header-bg th {
+        color: #2c3e50 !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.5px;
+        padding: 15px 10px !important;
+        background: transparent !important;
+    }
+
+    /* Floating Action Button (FAB) */
+    .fab-add {
+        position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px;
+        background-color: #55D47A; color: white; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 24px; box-shadow: 0 4px 15px rgba(85, 212, 122, 0.4);
+        transition: all 0.3s ease; z-index: 1000; text-decoration: none;
+    }
+    .fab-add:hover { transform: rotate(90deg) scale(1.1); color: white; background-color: #48b868; }
+
+    /* Pulsing effect for Pending badges */
+    .status-pending-pulse { animation: pulse-orange 2s infinite; }
+    @keyframes pulse-orange {
+        0% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.4); }
+        70% { box-shadow: 0 0 0 10px rgba(255, 193, 7, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+    }
 </style>
+
+<form method="POST" enctype="multipart/form-data" action="{% url 'import_attachees' %}" id="importForm" style="display: none;">
+    {% csrf_token %}
+    <input type="file" name="import_file" id="importInput" onchange="document.getElementById('importForm').submit()">
+</form>
 
 <div class="container-fluid mt-4 px-4 animate__animated animate__fadeIn">
     <div class="row mb-4 g-3">
-        <div class="col-md-3">
-            <div class="card shadow-sm rounded-4 bg-primary text-white p-3 glass-card">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div><h6 class="text-uppercase small opacity-75">Total Applicants</h6><h2 class="fw-bold mb-0">{{ total }}</h2></div>
-                    <i class="fas fa-users fa-2x opacity-25"></i>
+        <div class="col-md">
+            <a href="?status=&q={{ query }}&rows={{ rows }}" class="text-decoration-none">
+                <div class="card shadow-sm rounded-4 bg-primary text-white p-3 glass-card {% if not status_filter %}filter-active{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div><h6 class="text-uppercase small opacity-75">Total Applicants</h6><h2 class="fw-bold mb-0">{{ total }}</h2></div>
+                        <i class="fas fa-users fa-2x opacity-25"></i>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
-        <div class="col-md-3">
-            <div class="card shadow-sm rounded-4 bg-warning text-dark p-3 glass-card">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div><h6 class="text-uppercase small opacity-75">Pending Review</h6><h2 class="fw-bold mb-0">{{ pending }}</h2></div>
-                    <i class="fas fa-clock fa-2x opacity-25"></i>
+        <div class="col-md">
+            <a href="?status=Pending&q={{ query }}&rows={{ rows }}" class="text-decoration-none">
+                <div class="card shadow-sm rounded-4 bg-warning text-dark p-3 glass-card {% if status_filter == 'Pending' %}filter-active{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div><h6 class="text-uppercase small opacity-75">Pending Review</h6><h2 class="fw-bold mb-0">{{ pending }}</h2></div>
+                        <i class="fas fa-clock fa-2x opacity-25"></i>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
-        <div class="col-md-3">
-            <div class="card shadow-sm rounded-4 bg-success text-white p-3 glass-card">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div><h6 class="text-uppercase small opacity-75">Approved</h6><h2 class="fw-bold mb-0">{{ approved }}</h2></div>
-                    <i class="fas fa-check-circle fa-2x opacity-25"></i>
+        <div class="col-md">
+            <a href="?status=Approved&q={{ query }}&rows={{ rows }}" class="text-decoration-none">
+                <div class="card shadow-sm rounded-4 bg-success text-white p-3 glass-card {% if status_filter == 'Approved' %}filter-active{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div><h6 class="text-uppercase small opacity-75">Approved</h6><h2 class="fw-bold mb-0">{{ approved }}</h2></div>
+                        <i class="fas fa-check-circle fa-2x opacity-25"></i>
+                    </div>
                 </div>
-            </div>
+            </a>
         </div>
-        <div class="col-md-3">
-            <div class="card shadow-sm rounded-4 bg-danger text-white p-3 glass-card">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div><h6 class="text-uppercase small opacity-75">Rejected</h6><h2 class="fw-bold mb-0">{{ rejected }}</h2></div>
-                    <i class="fas fa-times-circle fa-2x opacity-25"></i>
+        <div class="col-md">
+            <a href="?status=Completed&q={{ query }}&rows={{ rows }}" class="text-decoration-none">
+                <div class="card shadow-sm rounded-4 bg-info text-white p-3 glass-card {% if status_filter == 'Completed' %}filter-active{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div><h6 class="text-uppercase small opacity-75">Completed</h6><h2 class="fw-bold mb-0">{{ completed }}</h2></div>
+                        <i class="fas fa-graduation-cap fa-2x opacity-25"></i>
+                    </div>
                 </div>
-            </div>
+            </a>
+        </div>
+        <div class="col-md">
+            <a href="?status=Rejected&q={{ query }}&rows={{ rows }}" class="text-decoration-none">
+                <div class="card shadow-sm rounded-4 bg-danger text-white p-3 glass-card {% if status_filter == 'Rejected' %}filter-active{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div><h6 class="text-uppercase small opacity-75">Rejected</h6><h2 class="fw-bold mb-0">{{ rejected }}</h2></div>
+                        <i class="fas fa-times-circle fa-2x opacity-25"></i>
+                    </div>
+                </div>
+            </a>
         </div>
     </div>
 
     <div class="card shadow-lg border-0 rounded-4 overflow-hidden">
-        <div class="card-header bg-white py-4 px-4 border-0 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
-            <h4 class="mb-0 text-dark fw-bold"><i class="fas fa-shield-alt me-2" style="color: #55D47A;"></i>Applicant Review Board</h4>
-            
+        <div class="card-header premium-header d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+            <h4 class="mb-0 fw-bold"><i class="fas fa-shield-alt me-2" style="color: #55D47A;"></i>Applicant Review Board</h4>
             <form method="GET" action="{% url 'dashboard' %}" class="search-container w-100">
-                <div class="input-group shadow-sm rounded-pill overflow-hidden">
-                    <select name="rows" class="form-select rows-select bg-light fw-bold text-muted px-3" style="max-width: 110px;" onchange="this.form.submit()">
+                <input type="hidden" name="status" value="{{ status_filter }}">
+                <div class="input-group shadow-lg rounded-pill overflow-hidden border-0">
+                    <select name="rows" class="form-select rows-select fw-bold text-muted px-3" style="max-width: 110px;" onchange="this.form.submit()">
                         <option value="5" {% if rows == '5' %}selected{% endif %}>5 rows</option>
                         <option value="10" {% if rows == '10' %}selected{% endif %}>10 rows</option>
                         <option value="20" {% if rows == '20' %}selected{% endif %}>20 rows</option>
                     </select>
-
-                    <input type="text" name="q" class="form-control search-input border-start-0" placeholder="Search ID, Name or Email..." value="{{ query }}">
-                    
-                    <button class="btn search-btn" type="submit">TRACE</button>
-                    
-                    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary reset-btn" title="Restart / Clear Search">
-                        <i class="fas fa-sync-alt"></i>
-                    </a>
+                    <input type="text" name="q" class="form-control search-input" placeholder="Search ID, Name or Email..." value="{{ query }}">
+                    <button class="btn search-btn px-4" type="submit">TRACE</button>
+                    <button type="submit" name="export" value="true" class="btn btn-dark fw-bold border-start border-secondary px-3" title="Export Current View to CSV">
+                        <i class="fas fa-file-excel me-1"></i> EXPORT
+                    </button>
+                    <button type="button" class="btn btn-dark fw-bold border-start border-secondary px-3" onclick="document.getElementById('importInput').click()" title="Import CSV Data">
+                        <i class="fas fa-file-import me-1"></i> IMPORT
+                    </button>
+                    <a href="{% url 'dashboard' %}" class="btn reset-btn px-3" title="Restart / Clear Search"><i class="fas fa-sync-alt text-muted"></i></a>
                 </div>
             </form>
         </div>
 
-        <div class="card-body p-0">
+        <div class="card-body p-0 bg-white">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-light text-muted small text-uppercase">
-                        <tr>
+                    <thead class="table-header-bg">
+                        <tr class="small text-uppercase">
                             <th class="ps-4">Tracking ID</th>
                             <th>Applicant Details</th>
-                            <th>Timeline</th> <th>Days Left</th> <th>Status</th>
+                            <th>Timeline</th> 
+                            <th>Days Left</th> 
+                            <th>Status</th>
                             <th class="text-end pe-4">Decisions & Tools</th>
                         </tr>
                     </thead>
@@ -113,7 +181,7 @@
                                 <div class="small text-muted">{{ a.email }}</div>
                             </td>
                             <td>
-                                <div class="small fw-bold">{{ a.start_date|date:"d M" }} - {{ a.end_date|date:"d M Y" }}</div>
+                                <div class="small fw-bold text-secondary">{{ a.start_date|date:"d M" }} - {{ a.end_date|date:"d M Y" }}</div>
                             </td>
                             <td>
                                 <span class="badge {% if a.days_remaining < 7 %}bg-danger{% else %}bg-dark{% endif %} px-2">
@@ -121,7 +189,7 @@
                                 </span>
                             </td>
                             <td>
-                                <span class="badge rounded-pill px-3 py-2 fw-bold text-uppercase" style="font-size: 0.65rem; 
+                                <span class="badge rounded-pill px-3 py-2 fw-bold text-uppercase {% if a.status == 'Pending' %}status-pending-pulse{% endif %}" style="font-size: 0.65rem; 
                                     {% if a.status == 'Approved' %}background-color: #d1e7dd; color: #0f5132;
                                     {% elif a.status == 'Rejected' %}background-color: #f8d7da; color: #842029;
                                     {% elif a.status == 'Completed' %}background-color: #cfe2ff; color: #084298;
@@ -131,83 +199,25 @@
                             </td>
                             <td class="text-end pe-4">
                                 <div class="btn-group btn-group-pill shadow-sm">
-                                    <button class="btn btn-sm btn-light px-3" data-bs-toggle="modal" data-bs-target="#preview-{{ a.id }}" title="View Details">
-                                        <i class="fas fa-eye"></i> PREVIEW
+                                    <button class="btn btn-sm btn-light px-3 fw-bold" data-bs-toggle="modal" data-bs-target="#preview-{{ a.id }}">
+                                        <i class="fas fa-eye me-1"></i> VIEW
                                     </button>
                                     {% if a.status == 'Pending' %}
-                                        <a href="{% url 'approve_student' a.id %}" class="btn btn-sm btn-success px-3" title="Approve Applicant"><i class="fas fa-check"></i></a>
+                                        <a href="{% url 'approve_student' a.id %}" class="btn btn-sm btn-success px-3"><i class="fas fa-check"></i></a>
                                     {% endif %}
-                                    <a href="{% url 'download_gate_pass' a.id %}" class="btn btn-sm btn-dark px-3" title="Download Gate Pass"><i class="fas fa-qrcode"></i></a>
+                                    <a href="{% url 'download_gate_pass' a.id %}" class="btn btn-sm btn-dark px-3"><i class="fas fa-qrcode"></i></a>
                                 </div>
                             </td>
                         </tr>
-
-                        <div class="modal fade" id="preview-{{ a.id }}" tabindex="-1" aria-hidden="true">
-                            <div class="modal-dialog modal-lg">
-                                <div class="modal-content rounded-4 border-0 shadow-lg">
-                                    <div class="modal-header border-0 bg-light rounded-top-4">
-                                        <h5 class="modal-title fw-bold">Reviewing Profile: {{ a.tracking_id }}</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                    </div>
-                                    <div class="modal-body p-4">
-                                        <div class="row g-4">
-                                            <div class="col-md-6 border-end">
-                                                <h6 class="fw-bold text-success mb-3"><i class="fas fa-user-circle me-2"></i>Personal Details</h6>
-                                                <p class="small mb-2"><b>Full Name:</b> {{ a.first_name }} {{ a.last_name }}</p>
-                                                <p class="small mb-2"><b>ID Number:</b> {{ a.national_id_number }}</p>
-                                                <p class="small mb-2"><b>Gender:</b> {{ a.gender }}</p>
-                                                <p class="small mb-2"><b>Email:</b> {{ a.email }}</p>
-                                                <p class="small mb-2"><b>Phone:</b> {{ a.phone }}</p>
-                                                <p class="small mb-2"><b>Institution:</b> {{ a.institution }}</p>
-                                            </div>
-                                            <div class="col-md-6">
-                                                <h6 class="fw-bold text-success mb-3"><i class="fas fa-file-alt me-2"></i>Submitted Documents</h6>
-                                                <div class="d-grid gap-2">
-                                                    <a href="{{ a.id_document.url }}" target="_blank" class="btn btn-sm btn-outline-dark text-start"><i class="fas fa-id-card me-2"></i> View National ID</a>
-                                                    <a href="{{ a.intro_letter.url }}" target="_blank" class="btn btn-sm btn-outline-dark text-start"><i class="fas fa-university me-2"></i> View Intro Letter</a>
-                                                    <a href="{{ a.curriculum_vitae.url }}" target="_blank" class="btn btn-sm btn-outline-dark text-start"><i class="fas fa-file-pdf me-2"></i> View CV</a>
-                                                    {% if a.signed_contract %}
-                                                    <a href="{{ a.signed_contract.url }}" target="_blank" class="btn btn-sm btn-outline-success text-start"><i class="fas fa-file-contract me-2"></i> View Signed Contract</a>
-                                                    {% endif %}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <hr class="my-4">
-                                        <form action="{% url 'update_status' a.id %}" method="POST">
-                                            {% csrf_token %}
-                                            <label class="small fw-bold mb-2 text-uppercase text-muted">Update Application Status</label>
-                                            <div class="input-group">
-                                                <select name="status" class="form-select border-success rounded-start-pill">
-                                                    <option value="Pending" {% if a.status == 'Pending' %}selected{% endif %}>Pending</option>
-                                                    <option value="Approved" {% if a.status == 'Approved' %}selected{% endif %}>Approved</option>
-                                                    <option value="Rejected" {% if a.status == 'Rejected' %}selected{% endif %}>Rejected</option>
-                                                    <option value="Completed" {% if a.status == 'Completed' %}selected{% endif %}>Completed</option>
-                                                </select>
-                                                <button type="submit" class="btn fw-bold px-4 rounded-end-pill" style="background-color: #55D47A; color: white; border: none;">
-                                                    UPDATE STATUS
-                                                </button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                    <div class="modal-footer border-0">
-                                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Close Review</button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
                         {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center py-5 text-muted italic">
-                                <i class="fas fa-search-minus fa-2x mb-3 d-block opacity-25"></i>
-                                No applicants found matching your search.
-                            </td>
-                        </tr>
+                        <tr><td colspan="6" class="text-center py-5 text-muted">No applicants found.</td></tr>
                         {% endfor %}
                     </tbody>
                 </table>
             </div>
-        </div>
+            </div>
     </div>
 </div>
+
+<a href="{% url 'apply' %}" class="fab-add" title="Quick Register Attachee"><i class="fas fa-plus"></i></a>
 {% endblock %}

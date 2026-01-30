@@ -1,4 +1,4 @@
-{% extends "accounts/base.html" %}
+﻿{% extends "accounts/base.html" %}
 
 {% block title %}Track Application | Eujim Solutions{% endblock %}
 
@@ -172,7 +172,7 @@
                         <div class="col-md-6">
                             <div class="p-3 border rounded-3 bg-light">
                                 <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.65rem;">Period</small>
-                                <span class="fw-bold">{{ attachee.start_date|date:"d M Y" }} � {{ attachee.end_date|date:"d M Y" }}</span>
+                                <span class="fw-bold">{{ attachee.start_date|date:"d M Y" }} — {{ attachee.end_date|date:"d M Y" }}</span>
                             </div>
                         </div>
                     </div>

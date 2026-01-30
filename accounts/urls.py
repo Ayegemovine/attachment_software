@@ -11,6 +11,10 @@ urlpatterns = [
     path('check-status/', views.check_status, name='check_status'),
     path('dashboard/', views.dashboard, name='dashboard'),
     
+    # Dashboard Data Tools
+    path('dashboard/export/', views.export_attachees, name='export_attachees'),
+    path('dashboard/import/', views.import_attachees, name='import_attachees'), # Added for CSV Import logic
+    
     # Dashboard Modal Status Update Logic
     path('update-status/<int:pk>/', views.update_status, name='update_status'),
     

@@ -25,6 +25,16 @@
     <div class="card shadow-lg border-0 rounded-4">
         <div class="card-body p-4 p-md-5">
             <form method="POST" enctype="multipart/form-data" id="applicationForm" class="needs-validation" novalidate>
+    {% if form.errors %}
+    <div class="alert alert-danger rounded-4 shadow-sm animate__animated animate__shakeX">
+        <h6 class="fw-bold"><i class="fas fa-exclamation-triangle me-2"></i> Please correct the highlighted errors:</h6>
+        <ul class="mb-0 small">
+            {% for field, errors in form.errors.items %}
+                <li><strong>{{ field|title }}:</strong> {{ errors|striptags }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
                 {% csrf_token %}
 
                 <div class="step" id="step1">
@@ -234,3 +244,4 @@
     endInput.addEventListener('change', updateDuration);
 </script>
 {% endblock %}
+
