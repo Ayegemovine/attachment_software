@@ -1,0 +1,139 @@
+{% extends "accounts/base.html" %}
+
+{% block content %}
+<style>
+    /* 1. Subtle Background Pattern & Watermark */
+    .hero-wrapper {
+        position: relative;
+        min-height: calc(100vh - 250px);
+        overflow: hidden;
+        /* Subtle Dot Grid Pattern */
+        background-image: radial-gradient(#55D47A 0.5px, transparent 0.5px);
+        background-size: 20px 20px;
+        background-color: #f8f9fa;
+    }
+
+    .watermark-logo {
+        position: absolute;
+        top: 10%;
+        left: -5%;
+        opacity: 0.03;
+        z-index: 0;
+        transform: rotate(-15deg);
+        pointer-events: none;
+    }
+
+    .hero-container {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        min-height: calc(100vh - 250px);
+    }
+
+    .hero-text-side {
+        text-align: left;
+        padding-right: 3rem;
+    }
+
+    /* 2. Enhanced Action Cards */
+    .action-card {
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.9);
+        backdrop-filter: blur(10px);
+    }
+    .action-card:hover {
+        transform: translateY(-10px) scale(1.02);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1) !important;
+    }
+
+    .btn-action {
+        width: 100%;
+        padding: 12px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-radius: 50px;
+    }
+
+    .brief-badge {
+        background-color: var(--eujim-green);
+        color: white;
+        padding: 6px 18px;
+        border-radius: 50px;
+        font-weight: 600;
+        display: inline-block;
+        font-size: 0.8rem;
+        letter-spacing: 1px;
+    }
+</style>
+
+<div class="hero-wrapper">
+    <img src="https://eujimsolutions.com/wp-content/uploads/2023/01/Eujim-Logo-white.png" class="watermark-logo d-none d-lg-block" style="filter: brightness(0) saturate(100%) invert(0%); width: 600px;">
+
+    <div class="container hero-container animate__animated animate__fadeIn">
+        <div class="row w-100 align-items-center">
+            <div class="col-lg-6 hero-text-side mb-5 mb-lg-0">
+                <span class="brief-badge mb-3 shadow-sm">ESTABLISHED 2026</span>
+                <h1 class="display-3 fw-bold mb-4">
+                    Streamlining Your <br><span class="text-eujim">Attachment</span> Journey.
+                </h1>
+                <p class="lead text-muted mb-4" style="font-size: 1.15rem; line-height: 1.8;">
+                    Eujim Solutions Limited provides a seamless digital platform for 
+                    students to manage their industrial placements. We simplify the 
+                    complexities of application, tracking, and evaluation in one secure hub.
+                </p>
+                
+                <div class="d-flex align-items-center mt-2">
+                    <div class="bg-white p-3 rounded-4 shadow-sm me-3">
+                        <i class="fas fa-shield-alt text-eujim fa-lg"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0 fw-bold">Verified Placements</h6>
+                        <small class="text-muted">End-to-end secure processing</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="row g-4">
+                    <div class="col-12">
+                        <div class="card action-card shadow-sm border-0">
+                            <div class="card-body p-4 d-flex align-items-center">
+                                <div class="bg-eujim text-white p-3 rounded-4 me-4 shadow">
+                                    <i class="fas fa-file-signature fa-2x"></i>
+                                </div>
+                                <div class="flex-grow-1 text-start">
+                                    <h4 class="fw-bold mb-1">New Application</h4>
+                                    <p class="small text-muted mb-3">Register and submit your documents instantly.</p>
+                                    <a href="{% url 'apply' %}" class="btn btn-eujim btn-action shadow-sm">
+                                        Get Started <i class="fas fa-arrow-right ms-2"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="card action-card shadow-sm border-0">
+                            <div class="card-body p-4 d-flex align-items-center">
+                                <div class="bg-dark text-white p-3 rounded-4 me-4 shadow">
+                                    <i class="fas fa-tasks fa-2x"></i>
+                                </div>
+                                <div class="flex-grow-1 text-start">
+                                    <h4 class="fw-bold mb-1">Check Status</h4>
+                                    <p class="small text-muted mb-3">Enter your details to track your progress.</p>
+                                    <a href="{% url 'check_status' %}" class="btn btn-outline-dark btn-action">
+                                        Track Application <i class="fas fa-search ms-2"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

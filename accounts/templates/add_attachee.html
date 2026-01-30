@@ -1,0 +1,52 @@
+<script>
+    function changeStep(step) {
+        document.querySelectorAll('.step-div').forEach(el => el.classList.add('d-none'));
+        document.getElementById('step' + step).classList.remove('d-none');
+        if (step === 2) {
+            document.getElementById('circle2').classList.add('active');
+        } else {
+            document.getElementById('circle2').classList.remove('active');
+        }
+        window.scrollTo(0,0);
+    }
+
+    function showLoading() {
+        document.getElementById('submitBtn').classList.add('d-none');
+        document.getElementById('loadingBtn').classList.remove('d-none');
+        return true;
+    }
+
+    // Date Validation & Duration Logic
+    const startDateInput = document.querySelector('input[name="start_date"]');
+    const endDateInput = document.querySelector('input[name="end_date"]');
+    const durationBadge = document.getElementById('durationBadge');
+    const durationDays = document.getElementById('durationDays');
+
+    // Set minimum start date to today
+    const today = new Date().toISOString().split('T')[0];
+    startDateInput.setAttribute('min', today);
+
+    function calculateDuration() {
+        const start = new Date(startDateInput.value);
+        const end = new Date(endDateInput.value);
+
+        // Reset if start date is changed to be after end date
+        if (startDateInput.value) {
+            endDateInput.setAttribute('min', startDateInput.value);
+        }
+
+        if (start && end && end >= start) {
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to include both days
+            durationDays.innerText = diffDays;
+            durationBadge.classList.remove('d-none');
+            durationBadge.classList.add('d-flex');
+        } else {
+            durationBadge.classList.add('d-none');
+            durationBadge.classList.remove('d-flex');
+        }
+    }
+
+    startDateInput.addEventListener('change', calculateDuration);
+    endDateInput.addEventListener('change', calculateDuration);
+</script>

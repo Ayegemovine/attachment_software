@@ -1,0 +1,87 @@
+{% extends "accounts/base.html" %}
+{% block content %}
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-success">Executive Analytics Portal</h2>
+        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+            <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4">
+        <h5 class="fw-bold mb-4 text-secondary"><i class="fas fa-users me-2"></i>Inclusivity & Diversity Overview</h5>
+        <div class="row align-items-center">
+            {% for g in gender_stats %}
+            <div class="col-md-4 mb-3">
+                <div class="d-flex justify-content-between mb-1">
+                    <span class="fw-bold small text-uppercase">{{ g.gender }}</span>
+                    <span class="text-muted small">{{ g.count }} Students</span>
+                </div>
+                <div class="progress" style="height: 12px; border-radius: 10px;">
+                    <div class="progress-bar {% if g.gender == 'Male' %}bg-primary{% elif g.gender == 'Female' %}bg-info{% else %}bg-secondary{% endif %}" 
+                         role="progressbar" 
+                         style="width: {% widthratio g.count total_students 100 %}%">
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-muted">No diversity data recorded yet.</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="fw-bold mb-0 text-dark">University Performance Rankings</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Institution</th>
+                            <th>Total Students</th>
+                            <th>Technical Avg</th>
+                            <th>Discipline Avg</th>
+                            <th class="pe-4">Elite Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in stats %}
+                        <tr>
+                            <td class="ps-4 fw-bold text-dark">{{ s.attachee__institution|default:"Independent / Private" }}</td>
+                            <td><span class="badge bg-light text-dark border rounded-pill px-3">{{ s.student_count }}</span></td>
+                            <td>
+                                <div class="progress mb-1" style="height: 6px; width: 120px;">
+                                    <div class="progress-bar bg-success" style="width: {% widthratio s.avg_tech 5 100 %}%"></div>
+                                </div>
+                                <small class="fw-bold">{{ s.avg_tech|floatformat:1 }}</small><small class="text-muted">/5.0</small>
+                            </td>
+                            <td>
+                                <div class="progress mb-1" style="height: 6px; width: 120px;">
+                                    <div class="progress-bar bg-info" style="width: {% widthratio s.avg_disc 5 100 %}%"></div>
+                                </div>
+                                <small class="fw-bold">{{ s.avg_disc|floatformat:1 }}</small><small class="text-muted">/5.0</small>
+                            </td>
+                            <td class="pe-4">
+                                {% if s.avg_tech >= 4.5 %}
+                                    <span class="badge bg-warning text-dark"><i class="fas fa-medal me-1"></i>ELITE PARTNER</span>
+                                {% elif s.avg_tech >= 3.5 %}
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">PREFERRED</span>
+                                {% else %}
+                                    <span class="badge bg-light text-muted border">STANDARD</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-5 text-muted">No evaluations found. Evaluate students in the dashboard to see analytics.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

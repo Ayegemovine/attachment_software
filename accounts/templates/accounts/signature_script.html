@@ -1,0 +1,44 @@
+<script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const canvas = document.getElementById("signature-pad");
+        const hiddenInput = document.getElementById("id_signature_data");
+        const form = document.getElementById("applicationForm");
+        const clearBtn = document.getElementById("clear-sig");
+
+        // Initialize Signature Pad
+        const signaturePad = new SignaturePad(canvas, {
+            backgroundColor: 'rgba(255, 255, 255, 0)',
+            penColor: 'rgb(0, 0, 0)'
+        });
+
+        // Ensure canvas scaling for accurate drawing
+        function resizeCanvas() {
+            const ratio = Math.max(window.devicePixelRatio || 1, 1);
+            canvas.width = canvas.offsetWidth * ratio;
+            canvas.height = canvas.offsetHeight * ratio;
+            canvas.getContext("2d").scale(ratio, ratio);
+            signaturePad.clear(); // Clear canvas on resize to avoid distortion
+        }
+
+        window.addEventListener("resize", resizeCanvas);
+        resizeCanvas();
+
+        // Clear button functionality
+        if (clearBtn) {
+            clearBtn.addEventListener("click", function() {
+                signaturePad.clear();
+                hiddenInput.value = "";
+            });
+        }
+
+        // Final capture before form submission
+        if (form) {
+            form.addEventListener("submit", function() {
+                if (!signaturePad.isEmpty()) {
+                    hiddenInput.value = signaturePad.toDataURL("image/png");
+                }
+            });
+        }
+    });
+</script>

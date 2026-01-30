@@ -1,0 +1,230 @@
+{% extends "accounts/base.html" %}
+
+{% block title %}Track Application | Eujim Solutions{% endblock %}
+
+{% block content %}
+<style>
+    /* 1. Enhanced Search Hub Styling */
+    .search-section {
+        background: linear-gradient(135deg, rgba(85, 212, 122, 0.05) 0%, rgba(255, 255, 255, 1) 100%);
+        border-radius: 30px;
+        padding: 40px;
+    }
+    
+    .search-container {
+        position: relative;
+        max-width: 650px;
+        margin: 0 auto;
+    }
+    .search-input-pill {
+        background: white !important;
+        border: 1.5px solid #e0e0e0 !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        border-radius: 50px !important;
+        padding: 1.2rem 1.5rem !important;
+        padding-right: 160px !important;
+    }
+    /* BRANDED OVAL BUTTON WITH COLOR #55D47A */
+    .btn-search-pill {
+        position: absolute;
+        right: 6px;
+        top: 6px;
+        bottom: 6px;
+        min-width: 140px;
+        border-radius: 50px !important;
+        font-weight: 800 !important;
+        letter-spacing: 1px;
+        transition: all 0.3s ease;
+        background-color: #55D47A !important; 
+        border: none !important;
+        color: white !important;
+        z-index: 10;
+    }
+    .btn-search-pill:hover {
+        background-color: #48b868 !important; /* Slightly darker for hover effect */
+        transform: scale(1.02);
+        box-shadow: 0 5px 15px rgba(85, 212, 122, 0.3);
+    }
+
+    /* 2. Status Timeline Styling */
+    .status-timeline {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+        margin-bottom: 40px;
+    }
+    .status-timeline::before {
+        content: '';
+        position: absolute;
+        top: 20px;
+        left: 10%;
+        right: 10%;
+        height: 3px;
+        background: #e9ecef;
+        z-index: 1;
+    }
+    .timeline-step {
+        z-index: 2;
+        text-align: center;
+        width: 100px;
+    }
+    .step-icon {
+        width: 45px;
+        height: 45px;
+        background: white;
+        border: 3px solid #e9ecef;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 10px;
+        transition: all 0.4s ease;
+        color: #adb5bd;
+    }
+    .active .step-icon {
+        border-color: #55D47A;
+        background: #55D47A;
+        color: white;
+        box-shadow: 0 0 15px rgba(85, 212, 122, 0.4);
+    }
+
+    /* 3. Downloadable Items Styling */
+    .download-card {
+        border: 1px solid rgba(85, 212, 122, 0.2);
+        background: white;
+        transition: 0.3s;
+        border-radius: 15px;
+    }
+    .download-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.05);
+    }
+</style>
+
+<div class="container py-4 animate__animated animate__fadeIn">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="search-section shadow-sm mb-4 border">
+                <div class="text-center mb-4">
+                    <h2 class="fw-bold"><span style="color: #55D47A;">Track</span> Your Progress</h2>
+                    <p class="text-muted small">Enter your Tracking ID, Email, or National ID to see your status.</p>
+                </div>
+                
+                <form method="POST" action="{% url 'check_status' %}">
+                    {% csrf_token %}
+                    <div class="search-container">
+                        <input type="text" name="search_query" class="form-control search-input-pill" 
+                               placeholder="Tracking ID / Email / National ID..." required>
+                        <button type="submit" class="btn btn-search-pill">
+                            SEARCH
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            {% if attachee %}
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden animate__animated animate__zoomIn">
+                <div class="card-header p-4 border-0" style="background-color: #55D47A; color: white;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="status-header-pill mb-2 d-inline-block" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); padding: 5px 15px; border-radius: 50px; font-size: 0.8rem; font-weight: bold;">APPLICATION FOUND</span>
+                            <h4 class="mb-0 fw-bold">{{ attachee.first_name }} {{ attachee.last_name }}</h4>
+                            <span class="opacity-75 small">Tracking ID: {{ attachee.tracking_id }}</span>
+                        </div>
+                        <div class="text-end">
+                            <div class="small opacity-75 mb-1 text-uppercase fw-bold" style="font-size: 0.7rem;">Status</div>
+                            <span class="badge bg-white rounded-pill px-3 py-2 fw-bold" style="color: #55D47A;">
+                                {{ attachee.get_status_display|upper }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-4 p-md-5">
+                    <div class="status-timeline">
+                        <div class="timeline-step active">
+                            <div class="step-icon"><i class="fas fa-file-alt"></i></div>
+                            <small class="fw-bold">Applied</small>
+                        </div>
+                        <div class="timeline-step {% if attachee.status != 'Pending' %}active{% endif %}">
+                            <div class="step-icon"><i class="fas fa-user-check"></i></div>
+                            <small class="fw-bold">Reviewed</small>
+                        </div>
+                        <div class="timeline-step {% if attachee.status == 'Approved' or attachee.status == 'Completed' %}active{% endif %}">
+                            <div class="step-icon"><i class="fas fa-check-circle"></i></div>
+                            <small class="fw-bold">Approved</small>
+                        </div>
+                        <div class="timeline-step {% if attachee.status == 'Completed' %}active{% endif %}">
+                            <div class="step-icon">
+                                <i class="fas {% if attachee.status == 'Completed' %}fa-graduation-cap{% else %}fa-lock{% endif %}"></i>
+                            </div>
+                            <small class="fw-bold">Finished</small>
+                        </div>
+                    </div>
+                    
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded-3 bg-light">
+                                <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.65rem;">Institution</small>
+                                <span class="fw-bold">{{ attachee.institution }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 border rounded-3 bg-light">
+                                <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.65rem;">Period</small>
+                                <span class="fw-bold">{{ attachee.start_date|date:"d M Y" }} — {{ attachee.end_date|date:"d M Y" }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-4 mt-4">
+                        {% if attachee.status == 'Completed' %}
+                        <div class="text-center mb-4">
+                            <h5 class="fw-bold text-success">Attachment Successfully Completed!</h5>
+                            <p class="text-muted small">Your official documents are ready for download below.</p>
+                        </div>
+                        
+                        <div class="row g-3 animate__animated animate__fadeInUp">
+                            <div class="col-md-6">
+                                <a href="{% url 'download_completion_letter' attachee.id %}" class="card download-card p-3 text-decoration-none text-dark h-100 shadow-sm border-0">
+                                    <div class="d-flex align-items-center">
+                                        <div class="text-white p-3 rounded-3 me-3 shadow-sm" style="background-color: #55D47A;">
+                                            <i class="fas fa-file-pdf fa-lg"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 fw-bold">Completion Letter</h6>
+                                            <small class="text-muted">Official Certificate</small>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+
+                            <div class="col-md-6">
+                                <a href="{% url 'download_recommendation_letter' attachee.id %}" class="card download-card p-3 text-decoration-none text-dark h-100 shadow-sm border-0">
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-dark text-white p-3 rounded-3 me-3 shadow-sm">
+                                            <i class="fas fa-award fa-lg"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0 fw-bold">Recommendation</h6>
+                                            <small class="text-muted">Reference Letter</small>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                        {% elif attachee.status == 'Approved' %}
+                        <div class="text-center">
+                            <a href="{% url 'download_gate_pass' attachee.id %}" class="btn btn-dark rounded-pill px-5 py-2 shadow-sm fw-bold">
+                                <i class="fas fa-id-badge me-2"></i> DOWNLOAD GATE PASS
+                            </a>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

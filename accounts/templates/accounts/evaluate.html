@@ -1,0 +1,71 @@
+{% extends "accounts/base.html" %}
+{% block content %}
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="card-header bg-success text-white p-4">
+                    <h4 class="fw-bold mb-0"><i class="fas fa-star me-2"></i>Performance Evaluation</h4>
+                    <p class="mb-0 small opacity-75">Evaluating: {{ attachee.first_name }} {{ attachee.last_name }} ({{ attachee.tracking_id }})</p>
+                </div>
+                <div class="card-body p-4 p-md-5">
+                    <form method="POST">
+                        {% csrf_token %}
+                        
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-uppercase small text-muted">Technical Competence</label>
+                            <select name="tech" class="form-select custom-input" required>
+                                <option value="5">5 - Exceptional (Exceeds all expectations)</option>
+                                <option value="4">4 - Proficient (Highly skilled)</option>
+                                <option value="3" selected>3 - Satisfactory (Meets expectations)</option>
+                                <option value="2">2 - Developing (Needs improvement)</option>
+                                <option value="1">1 - Unsatisfactory</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-uppercase small text-muted">Discipline & Professionalism</label>
+                            <select name="disc" class="form-select custom-input" required>
+                                <option value="5">5 - Exemplary Conduct</option>
+                                <option value="4">4 - Very Professional</option>
+                                <option value="3" selected>3 - Professional</option>
+                                <option value="2">2 - Occasional Lapses</option>
+                                <option value="1">1 - Unprofessional</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-uppercase small text-muted">Teamwork & Collaboration</label>
+                            <select name="team" class="form-select custom-input" required>
+                                <option value="5">5 - Natural Leader / Collaborative</option>
+                                <option value="4">4 - Great Team Player</option>
+                                <option value="3" selected>3 - Cooperative</option>
+                                <option value="2">2 - Prefer Independent Work</option>
+                                <option value="1">1 - Poor Collaboration</option>
+                            </select>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-uppercase small text-muted">Supervisor Remarks</label>
+                            <textarea name="comments" class="form-control custom-input" rows="4" placeholder="Briefly describe the student's learning outcomes and behavior..."></textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mt-5">
+                            <a href="{% url 'dashboard' %}" class="text-decoration-none text-muted fw-bold small">CANCEL</a>
+                            <button type="submit" class="btn btn-success px-5 rounded-pill shadow-lg py-2">
+                                SUBMIT GRADE & FINALIZE <i class="fas fa-check-circle ms-2"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .custom-input { padding: 0.8rem; border-radius: 0.75rem; border: 1.5px solid #e0e0e0; transition: 0.3s; }
+    .custom-input:focus { border-color: #198754; box-shadow: 0 0 0 0.25rem rgba(25, 135, 84, 0.1); }
+    .rounded-4 { border-radius: 1.25rem !important; }
+</style>
+{% endblock %}

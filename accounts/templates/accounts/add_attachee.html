@@ -1,0 +1,236 @@
+{% extends "accounts/base.html" %}
+{% block content %}
+<div id="loading-overlay">
+    <div class="spinner-eujim mb-3"></div>
+    <h4 class="fw-bold text-success">Processing Application...</h4>
+    <p class="text-muted small">Ensuring all documents meet the requirements.</p>
+</div>
+
+<div class="container mt-4 mb-5">
+    <div class="row justify-content-center mb-4">
+        <div class="col-md-8">
+            <div class="stepper-wrapper">
+                <div class="stepper-item active" id="s1">
+                    <div class="step-counter">1</div>
+                    <div class="step-name">Personal</div>
+                </div>
+                <div class="stepper-item" id="s2">
+                    <div class="step-counter">2</div>
+                    <div class="step-name">Contract</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-lg border-0 rounded-4">
+        <div class="card-body p-4 p-md-5">
+            <form method="POST" enctype="multipart/form-data" id="applicationForm" class="needs-validation" novalidate>
+                {% csrf_token %}
+
+                <div class="step" id="step1">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="bg-success text-white rounded-circle p-2 me-3"><i class="fas fa-user"></i></div>
+                        <h4 class="fw-bold mb-0 text-secondary">Personal Information</h4>
+                    </div>
+                    
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase">First Name</label>
+                            {{ form.first_name }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase">Last Name</label>
+                            {{ form.last_name }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase">National ID Number</label>
+                            {{ form.national_id_number }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase">Email Address</label>
+                            {{ form.email }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase">Phone Number</label>
+                            {{ form.phone }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase">Gender</label>
+                            {{ form.gender }} 
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase text-success">Proposed Start Date</label>
+                            {{ form.start_date }}
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold small text-uppercase text-success">Proposed End Date</label>
+                            {{ form.end_date }}
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold small text-uppercase">Learning Institution</label>
+                            {{ form.institution }}
+                        </div>
+
+                        <div class="col-12 d-none" id="durationRow">
+                            <div class="alert alert-success border-0 rounded-3 py-2 px-3 mb-0 small d-inline-block">
+                                <i class="fas fa-calendar-check me-2"></i> Total Duration: <b><span id="dayCount">0</span> Days</b>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-5 text-end">
+                        <button type="button" class="btn btn-success px-5 rounded-pill shadow-sm" onclick="showStep(2)">
+                            Next: Contract & Documents <i class="fas fa-arrow-right ms-2"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="step d-none" id="step2">
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="bg-success text-white rounded-circle p-2 me-3"><i class="fas fa-file-upload"></i></div>
+                        <h4 class="fw-bold mb-0 text-secondary">Documents & Verification</h4>
+                    </div>
+
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-4">
+                            <div class="upload-card p-3 border rounded-3 bg-light h-100">
+                                <label class="fw-bold small d-block mb-1 text-uppercase">National ID Copy</label>
+                                <p class="text-muted x-small mb-2">Used for identity verification. <b>PDF, JPG, or PNG</b> (Max 7MB).</p>
+                                {{ form.id_document }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="upload-card p-3 border rounded-3 bg-light h-100">
+                                <label class="fw-bold small d-block mb-1 text-uppercase">Introduction Letter</label>
+                                <p class="text-muted x-small mb-2">Official letter from your school. <b>PDF or DOCX</b> (Max 7MB).</p>
+                                {{ form.intro_letter }}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="upload-card p-3 border rounded-3 bg-light h-100">
+                                <label class="fw-bold small d-block mb-1 text-uppercase">Your CV</label>
+                                <p class="text-muted x-small mb-2">Professional background summary. <b>PDF or DOCX</b> (Max 7MB).</p>
+                                {{ form.curriculum_vitae }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 border rounded-4 bg-light shadow-sm mb-4">
+                        <h6 class="fw-bold text-success text-uppercase small mb-3"><i class="fas fa-file-contract me-2"></i>Engagement Contract</h6>
+                        <p class="small text-secondary mb-4">This contract outlines the <b>free engagement</b> terms and your <b>consent for data use</b>.</p>
+                        
+                        <div class="row align-items-center g-3">
+                            <div class="col-md-7">
+                                <p class="mb-0 fw-bold">Step 1: Download & Sign</p>
+                                <p class="text-muted small mb-0">Download the PDF, sign it manually, and scan it back.</p>
+                            </div>
+                            <div class="col-md-5 text-md-end">
+                                <a href="/static/documents/Contract.pdf" class="btn btn-dark rounded-pill px-4" download>
+                                    <i class="fas fa-download me-2"></i> Download Contract PDF
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <div>
+                            <p class="mb-2 fw-bold">Step 2: Upload Signed Copy</p>
+                            <p class="text-muted x-small mb-2">Ensure the scan is clear. <b>Strictly PDF format</b> (Max 7MB).</p>
+                            {{ form.signed_contract }}
+                        </div>
+                    </div>
+
+                    <div class="bg-light p-4 rounded-4 border my-4">
+                        <h6 class="fw-bold text-uppercase small mb-3 text-success">Final Confirmations</h6>
+                        <div class="form-check custom-check mb-2">
+                            {{ form.data_policy_consent }}
+                            <label class="form-check-label ms-2 small" for="{{ form.data_policy_consent.id_for_label }}">I accept the Data Privacy Policy</label>
+                        </div>
+                        <div class="form-check custom-check mb-2">
+                            {{ form.terms_consent }}
+                            <label class="form-check-label ms-2 small" for="{{ form.terms_consent.id_for_label }}">I accept Terms & Conditions</label>
+                        </div>
+                        <div class="form-check custom-check">
+                            {{ form.marketing_consent }}
+                            <label class="form-check-label ms-2 small" for="{{ form.marketing_consent.id_for_label }}">Consent for Media Release (Images/Videos)</label>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between mt-5">
+                        <button type="button" class="btn btn-outline-secondary px-4 rounded-pill" onclick="showStep(1)">
+                            <i class="fas fa-arrow-left me-2"></i> Back
+                        </button>
+                        <button type="submit" class="btn btn-success px-5 rounded-pill shadow" onclick="prepareSubmit()">
+                            Final Submission <i class="fas fa-check-circle ms-2"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.95); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; }
+    .spinner-eujim { width: 3.5rem; height: 3.5rem; border: 0.35em solid #f3f3f3; border-top: 0.35em solid #198754; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    .stepper-wrapper { display: flex; justify-content: space-between; margin-bottom: 20px; }
+    .stepper-item { position: relative; display: flex; flex-direction: column; align-items: center; flex: 1; }
+    .stepper-item.active .step-counter { background-color: #198754; color: white; }
+    .step-counter { width: 40px; height: 40px; border-radius: 50%; background: #ccc; display: flex; align-items: center; justify-content: center; font-weight: bold; }
+    .upload-card { transition: 0.3s; border: 1px dashed #ced4da !important; }
+    .upload-card:hover { border-color: #198754 !important; background: #f8fffb !important; }
+    .x-small { font-size: 0.72rem; line-height: 1.2; }
+</style>
+
+<script>
+    function showStep(n) { 
+        document.querySelectorAll('.step').forEach(s => s.classList.add('d-none')); 
+        document.getElementById('step' + n).classList.remove('d-none');
+        if(n === 2) document.getElementById('s2').classList.add('active');
+        else document.getElementById('s2').classList.remove('active');
+        window.scrollTo(0,0);
+    }
+
+    function prepareSubmit() { 
+        const form = document.getElementById('applicationForm');
+        if (form.checkValidity()) { 
+            document.getElementById('loading-overlay').style.display = 'flex'; 
+        }
+    }
+
+    // New JavaScript for Validation & Duration Calculation
+    const startInput = document.querySelector('input[name="start_date"]');
+    const endInput = document.querySelector('input[name="end_date"]');
+    const durationRow = document.getElementById('durationRow');
+    const dayCountDisplay = document.getElementById('dayCount');
+
+    // Prevent picking past dates for Start Date
+    const today = new Date().toISOString().split('T')[0];
+    startInput.setAttribute('min', today);
+
+    function updateDuration() {
+        const start = new Date(startInput.value);
+        const end = new Date(endInput.value);
+
+        // Ensure End Date cannot be before Start Date
+        if (startInput.value) {
+            endInput.setAttribute('min', startInput.value);
+        }
+
+        if (startInput.value && endInput.value && end >= start) {
+            const diffTime = Math.abs(end - start);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // Inclusive
+            dayCountDisplay.innerText = diffDays;
+            durationRow.classList.remove('d-none');
+        } else {
+            durationRow.classList.add('d-none');
+        }
+    }
+
+    startInput.addEventListener('change', updateDuration);
+    endInput.addEventListener('change', updateDuration);
+</script>
+{% endblock %}
