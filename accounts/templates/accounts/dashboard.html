@@ -42,7 +42,7 @@
     }
     .premium-header h4 { color: white !important; letter-spacing: 1px; }
 
-    /* NEW: Enhanced Table Column Headers */
+    /* Enhanced Table Column Headers */
     .table-header-bg {
         background: linear-gradient(to right, #f8f9fa, #ffffff) !important;
         border-bottom: 2px solid #55D47A !important;
@@ -199,13 +199,31 @@
                             </td>
                             <td class="text-end pe-4">
                                 <div class="btn-group btn-group-pill shadow-sm">
-                                    <button class="btn btn-sm btn-light px-3 fw-bold" data-bs-toggle="modal" data-bs-target="#preview-{{ a.id }}">
+                                    <button class="btn btn-sm btn-light px-3 fw-bold" onclick="openDetail({
+                                        id: '{{ a.id }}',
+                                        trackingId: '{{ a.tracking_id }}',
+                                        firstName: '{{ a.first_name }}',
+                                        lastName: '{{ a.last_name }}',
+                                        idNum: '{{ a.national_id_number }}',
+                                        email: '{{ a.email }}',
+                                        phone: '{{ a.phone }}',
+                                        gender: '{{ a.gender }}',
+                                        institution: '{{ a.institution }}',
+                                        startDate: '{{ a.start_date|date:"d M Y" }}',
+                                        endDate: '{{ a.end_date|date:"d M Y" }}',
+                                        status: '{{ a.status }}',
+                                        notes: '{{ a.admin_notes|escapejs }}',
+                                        idUrl: '{% if a.id_document %}{{ a.id_document.url }}{% endif %}',
+                                        introUrl: '{% if a.intro_letter %}{{ a.intro_letter.url }}{% endif %}',
+                                        cvUrl: '{% if a.curriculum_vitae %}{{ a.curriculum_vitae.url }}{% endif %}',
+                                        contractUrl: '{% if a.signed_contract %}{{ a.signed_contract.url }}{% endif %}'
+                                    })">
                                         <i class="fas fa-eye me-1"></i> VIEW
                                     </button>
-                                    {% if a.status == 'Pending' %}
-                                        <a href="{% url 'approve_student' a.id %}" class="btn btn-sm btn-success px-3"><i class="fas fa-check"></i></a>
+                                    
+                                    {% if a.status == 'Approved' or a.status == 'Completed' %}
+                                        <a href="{% url 'download_gate_pass' a.id %}" class="btn btn-sm btn-dark px-3"><i class="fas fa-qrcode"></i></a>
                                     {% endif %}
-                                    <a href="{% url 'download_gate_pass' a.id %}" class="btn btn-sm btn-dark px-3"><i class="fas fa-qrcode"></i></a>
                                 </div>
                             </td>
                         </tr>
@@ -215,9 +233,113 @@
                     </tbody>
                 </table>
             </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 25px;">
+            <div class="modal-header border-0 bg-dark text-white px-4 py-3" style="border-radius: 25px 25px 0 0;">
+                <h5 class="fw-bold mb-0">Review Center: <span id="modalTrackingID" class="text-success"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
+            <div class="modal-body p-0">
+                <div class="row g-0">
+                    <div class="col-md-4 bg-light p-4" style="max-height: 80vh; overflow-y: auto;">
+                        <h6 class="fw-bold text-success small mb-3 border-bottom pb-2">APPLICANT DETAILS</h6>
+                        <div class="mb-2 small"><b>Name:</b> <span id="modalName" class="text-dark"></span></div>
+                        <div class="mb-2 small"><b>ID Number:</b> <span id="modalIDNum" class="text-dark"></span></div>
+                        <div class="mb-2 small"><b>Contact:</b> <span id="modalEmail" class="text-dark"></span> | <span id="modalPhone"></span></div>
+                        <div class="mb-2 small"><b>School:</b> <span id="modalInstitution" class="text-dark"></span></div>
+                        <div class="mb-4 small"><b>Period:</b> <span id="modalDates" class="text-dark"></span></div>
+
+                        <h6 class="fw-bold text-success small mb-3 border-bottom pb-2">ACTION PANEL</h6>
+                        <form method="POST" id="statusUpdateForm">
+                            {% csrf_token %}
+                            <label class="small fw-bold text-muted mb-1">Set Status</label>
+                            <select name="status" id="modalStatusSelect" class="form-select fw-bold mb-3 border-2 shadow-sm">
+                                <option value="Pending">Pending</option>
+                                <option value="Approved">Approved</option>
+                                <option value="Rejected">Rejected</option>
+                                <option value="Completed">Completed</option>
+                            </select>
+                            
+                            <label class="small fw-bold text-muted mb-1">Admin Notes (Internal)</label>
+                            <textarea name="admin_notes" id="modalAdminNotes" class="form-control mb-3 border-2 shadow-sm" rows="3" placeholder="Reason for decision..."></textarea>
+                            
+                            <button type="submit" class="btn btn-success w-100 rounded-pill fw-bold shadow-sm">SAVE DECISION & NOTIFY</button>
+                        </form>
+
+                        <h6 class="fw-bold text-muted small mt-4 mb-2">ATTACHED DOCUMENTS</h6>
+                        <div id="docButtons" class="d-grid gap-2"></div>
+                    </div>
+
+                    <div class="col-md-8 bg-secondary d-flex align-items-center justify-content-center" id="previewContainer" style="min-height: 600px; background-color: #2c2c2c !important;">
+                        <div class="text-white text-center opacity-50">
+                            <i class="fas fa-file-pdf fa-4x mb-3"></i>
+                            <p>Select a document to preview it here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
 <a href="{% url 'apply' %}" class="fab-add" title="Quick Register Attachee"><i class="fas fa-plus"></i></a>
+
+<script>
+function openDetail(data) {
+    // Fill text fields
+    document.getElementById('modalTrackingID').innerText = data.trackingId;
+    document.getElementById('modalName').innerText = data.firstName + " " + data.lastName;
+    document.getElementById('modalIDNum').innerText = data.idNum;
+    document.getElementById('modalEmail').innerText = data.email;
+    document.getElementById('modalPhone').innerText = data.phone;
+    document.getElementById('modalInstitution').innerText = data.institution;
+    document.getElementById('modalDates').innerText = data.startDate + " to " + data.endDate;
+    document.getElementById('modalStatusSelect').value = data.status;
+    document.getElementById('modalAdminNotes').value = data.notes;
+    
+    // Dynamically set form action
+    document.getElementById('statusUpdateForm').action = "/update-status/" + data.id + "/";
+
+    // Build document buttons
+    const docContainer = document.getElementById('docButtons');
+    docContainer.innerHTML = ''; // Reset
+    
+    const docs = [
+        { label: 'National ID', url: data.idUrl },
+        { label: 'Intro Letter', url: data.introUrl },
+        { label: 'Curriculum Vitae', url: data.cvUrl },
+        { label: 'Signed Contract', url: data.contractUrl }
+    ];
+
+    docs.forEach(doc => {
+        if (doc.url && doc.url !== '') {
+            let btn = document.createElement('button');
+            btn.className = "btn btn-white btn-sm border text-start px-3 shadow-sm py-2";
+            btn.innerHTML = `<i class="fas fa-eye text-success me-2"></i> View ${doc.label}`;
+            btn.onclick = () => {
+                document.getElementById('previewContainer').innerHTML = 
+                    `<embed src="${doc.url}" type="application/pdf" width="100%" height="100%" />`;
+            };
+            docContainer.appendChild(btn);
+        }
+    });
+
+    // Reset preview container on open
+    document.getElementById('previewContainer').innerHTML = `
+        <div class="text-white text-center opacity-50">
+            <i class="fas fa-file-pdf fa-4x mb-3"></i>
+            <p>Select a document to preview it here</p>
+        </div>`;
+
+    // Show the modal
+    var myModal = new bootstrap.Modal(document.getElementById('detailModal'));
+    myModal.show();
+}
+</script>
+
 {% endblock %}

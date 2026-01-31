@@ -39,6 +39,10 @@ class Attachee(models.Model):
     
     # Status and Completion
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
+    
+    # NEW: Admin Decision Hub Notes
+    admin_notes = models.TextField(blank=True, null=True, help_text="Internal notes regarding the application.")
+    
     completion_date = models.DateField(null=True, blank=True)
     tracking_id = models.CharField(max_length=20, unique=True, editable=False)
     created_at = models.DateTimeField(auto_now_add=True)

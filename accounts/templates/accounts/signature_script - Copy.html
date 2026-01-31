@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        .email-container { font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e0e0e0; border-radius: 10px; overflow: hidden; }
+        .header { background-color: #55D47A; padding: 30px; text-align: center; }
+        .content { padding: 40px; color: #3D3D3D; line-height: 1.6; }
+        .footer { background-color: #3D3D3D; color: #ffffff; padding: 20px; text-align: center; font-size: 12px; }
+        .btn { background-color: #55D47A; color: white !important; padding: 12px 25px; text-decoration: none; border-radius: 50px; font-weight: bold; display: inline-block; margin-top: 20px; }
+        .logo { max-height: 60px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <div class="header">
+            <h2 style="color: white; margin: 0;">EUJIM SOLUTIONS LIMITED</h2>
+        </div>
+        <div class="content">
+            <h3>Hello {{ name }},</h3>
+            <p>{{ body_text }}</p>
+            {% if action_url %}
+                <a href="{{ action_url }}" class="btn">{{ action_text }}</a>
+            {% endif %}
+            <br><br>
+            <p>Best Regards,<br><strong>HR Operations Team</strong><br>Eujim Solutions Ltd.</p>
+        </div>
+        <div class="footer">
+            &copy; 2026 Eujim Solutions Limited | Gesora Road, Utawala
+        </div>
+    </div>
+</body>
+</html>
