@@ -29,6 +29,34 @@ def add_attachee(request):
         form = AttacheeForm(request.POST, request.FILES)
         if form.is_valid():
             instance = form.save()
+            
+            # --- NEW: Application Received Email ---
+            action_url = request.build_absolute_uri('/check-status/')
+            body_text = (
+                f"Your application has been well received and is currently in progress. "
+                f"Please note that your tracking number will be used to track your progress "
+                f"and verify the authenticity of your documents upon completion."
+            )
+            
+            html_content = render_to_string('accounts/email_template.html', {
+                'name': instance.first_name,
+                'body_text': body_text,
+                'tracking_number': instance.tracking_id,
+                'action_url': action_url,
+                'action_text': 'Track Application',
+                'footer_note': "In case you need assistance, contact us at info@eujimsolutions.com or +254 718099959."
+            })
+            
+            email = EmailMultiAlternatives(
+                subject=f"Application Received - {instance.tracking_id}",
+                body=strip_tags(html_content),
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=[instance.email]
+            )
+            email.attach_alternative(html_content, "text/html")
+            email.send(fail_silently=True)
+            # --- End Email Logic ---
+
             return redirect('application_success', application_number=instance.tracking_id)
     else:
         form = AttacheeForm()
@@ -148,7 +176,7 @@ def dashboard(request):
 
 @user_passes_test(is_admin)
 def update_status(request, pk):
-    """COMBINED: Captures Notes, Updates Status, and sends Branded HTML Email"""
+    """UPDATED: Detailed Email Messaging for Approvals and Completions"""
     if request.method == "POST":
         attachee = get_object_or_404(Attachee, pk=pk)
         old_status = attachee.status
@@ -165,10 +193,21 @@ def update_status(request, pk):
             
             if old_status != new_status:
                 action_url = request.build_absolute_uri('/check-status/')
+                
+                # --- NEW: Enhanced Status Mapping ---
                 status_map = {
-                    'Approved': ("Congratulations! Your application has been APPROVED.", "Get Gate Pass"),
-                    'Rejected': ("We regret to inform you that your application was not successful.", "Check Status"),
-                    'Completed': ("Your attachment period is COMPLETED. Documents are ready.", "Get Documents")
+                    'Approved': (
+                        "Congratulations! Your application has been APPROVED. We expect total discipline and full cooperation during your tenure with us.", 
+                        "Get Gate Pass"
+                    ),
+                    'Rejected': (
+                        "We regret to inform you that your application was not successful at this time.", 
+                        "Check Status"
+                    ),
+                    'Completed': (
+                        "Your attachment period is now COMPLETED. We truly appreciate the time you spent with us and wish you the very best in your future endeavors.", 
+                        "Get Documents"
+                    )
                 }
                 
                 if new_status in status_map:
@@ -176,8 +215,10 @@ def update_status(request, pk):
                     html_content = render_to_string('accounts/email_template.html', {
                         'name': attachee.first_name,
                         'body_text': body_text,
+                        'tracking_number': attachee.tracking_id,
                         'action_url': action_url,
-                        'action_text': btn_label
+                        'action_text': btn_label,
+                        'footer_note': "For any assistance, contact info@eujimsolutions.com"
                     })
                     
                     email = EmailMultiAlternatives(
@@ -396,7 +437,6 @@ def download_gate_pass(request, attachee_id):
     p.line(1.0*inch, y_detail - 0.25*inch, 3.2*inch, y_detail - 0.25*inch)
     
     p.setFont("Helvetica", 11)
-    # GATE PASS: Kept in second person "You"
     welcome_text = (
         f"We are pleased to welcome you, {attachee.first_name}, to EUJIM SOLUTIONS LIMITED. "
         f"During the stated period, you will be an integral part of our team. "

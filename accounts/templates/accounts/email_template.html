@@ -8,6 +8,8 @@
         .footer { background-color: #3D3D3D; color: #ffffff; padding: 20px; text-align: center; font-size: 12px; }
         .btn { background-color: #55D47A; color: white !important; padding: 12px 25px; text-decoration: none; border-radius: 50px; font-weight: bold; display: inline-block; margin-top: 20px; }
         .logo { max-height: 60px; margin-bottom: 10px; }
+        /* Style for the Tracking Number section */
+        .tracking-box { background-color: #f9f9f9; border-left: 4px solid #55D47A; padding: 15px; margin: 20px 0; font-size: 15px; }
     </style>
 </head>
 <body>
@@ -18,11 +20,26 @@
         <div class="content">
             <h3>Hello {{ name }},</h3>
             <p>{{ body_text }}</p>
+
+            {% if tracking_number %}
+            <div class="tracking-box">
+                <strong>Tracking ID:</strong> {{ tracking_number }}
+                <br>
+                <small style="color: #666;">Keep this ID safe for progress tracking and document verification.</small>
+            </div>
+            {% endif %}
+
             {% if action_url %}
                 <a href="{{ action_url }}" class="btn">{{ action_text }}</a>
             {% endif %}
+            
             <br><br>
             <p>Best Regards,<br><strong>HR Operations Team</strong><br>Eujim Solutions Ltd.</p>
+
+            {% if footer_note %}
+            <hr style="border: 0; border-top: 1px solid #eee; margin-top: 20px;">
+            <p style="font-size: 13px; color: #666; font-style: italic;">{{ footer_note }}</p>
+            {% endif %}
         </div>
         <div class="footer">
             &copy; 2026 Eujim Solutions Limited | Gesora Road, Utawala
