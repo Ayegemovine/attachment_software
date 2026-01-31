@@ -99,13 +99,26 @@
         transform: translateY(-5px);
         box-shadow: 0 10px 20px rgba(0,0,0,0.05);
     }
+
+    /* --- MOBILE OPTIMIZATIONS --- */
+    @media (max-width: 767.98px) {
+        .search-section { padding: 25px 15px; border-radius: 20px; }
+        .search-input-pill { padding-right: 1.5rem !important; margin-bottom: 10px; }
+        .btn-search-pill { position: static; width: 100%; margin-top: 10px; padding: 12px !important; }
+        
+        /* Adjust timeline for mobile */
+        .status-timeline::before { display: none; } /* Hide horizontal line */
+        .status-timeline { flex-direction: column; gap: 15px; align-items: flex-start; padding-left: 20px; }
+        .timeline-step { width: auto; display: flex; align-items: center; text-align: left; }
+        .step-icon { margin: 0 15px 0 0; width: 35px; height: 35px; font-size: 0.8rem; }
+    }
 </style>
 
 <div class="container py-4 animate__animated animate__fadeIn">
     <div class="row justify-content-center">
         <div class="col-lg-10">
-            <div class="search-section shadow-sm mb-4 border">
-                <div class="text-center mb-4">
+            <div class="search-section shadow-sm mb-4 border text-center">
+                <div class="mb-4">
                     <h2 class="fw-bold"><span style="color: #55D47A;">Track</span> Your Progress</h2>
                     <p class="text-muted small">Enter your Tracking ID, Email, or National ID to see your status.</p>
                 </div>
@@ -125,14 +138,14 @@
             {% if attachee %}
             <div class="card border-0 shadow-lg rounded-4 overflow-hidden animate__animated animate__zoomIn">
                 <div class="card-header p-4 border-0" style="background-color: #55D47A; color: white;">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                        <div class="mb-3 mb-md-0">
                             <span class="status-header-pill mb-2 d-inline-block" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); padding: 5px 15px; border-radius: 50px; font-size: 0.8rem; font-weight: bold;">APPLICATION FOUND</span>
                             <h4 class="mb-0 fw-bold">{{ attachee.first_name }} {{ attachee.last_name }}</h4>
                             <span class="opacity-75 small">Reference No: {{ attachee.tracking_id }}</span>
                         </div>
-                        <div class="text-end">
-                            <div class="small opacity-75 mb-1 text-uppercase fw-bold" style="font-size: 0.7rem;">Status</div>
+                        <div class="text-md-end">
+                            <div class="small opacity-75 mb-1 text-uppercase fw-bold" style="font-size: 0.7rem;">Current Status</div>
                             <span class="badge bg-white rounded-pill px-3 py-2 fw-bold" style="color: #55D47A;">
                                 {{ attachee.get_status_display|upper }}
                             </span>
@@ -171,7 +184,7 @@
                         </div>
                         <div class="col-md-6">
                             <div class="p-3 border rounded-3 bg-light">
-                                <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.65rem;">Period</small>
+                                <small class="text-muted d-block text-uppercase fw-bold" style="font-size: 0.65rem;">Attachment Period</small>
                                 <span class="fw-bold">{{ attachee.start_date|date:"d M Y" }} — {{ attachee.end_date|date:"d M Y" }}</span>
                             </div>
                         </div>
@@ -219,7 +232,7 @@
                             <h5 class="fw-bold" style="color: #55D47A;">Welcome Aboard!</h5>
                             <p class="text-muted small">You have officially started your attachment. Download your staff ID below.</p>
                             <div class="mt-4">
-                                <a href="{% url 'download_id_card' attachee.id %}" class="btn btn-primary rounded-pill px-5 py-2 shadow-sm fw-bold">
+                                <a href="{% url 'download_id_card' attachee.id %}" class="btn btn-primary rounded-pill px-5 py-2 shadow-sm fw-bold w-100 w-md-auto">
                                     <i class="fas fa-id-card me-2"></i> DOWNLOAD ATTACHMENT ID
                                 </a>
                             </div>
@@ -227,7 +240,7 @@
 
                         {% elif attachee.status == 'Approved' %}
                         <div class="text-center">
-                            <a href="{% url 'download_gate_pass' attachee.id %}" class="btn btn-dark rounded-pill px-5 py-2 shadow-sm fw-bold">
+                            <a href="{% url 'download_gate_pass' attachee.id %}" class="btn btn-dark rounded-pill px-5 py-2 shadow-sm fw-bold w-100 w-md-auto">
                                 <i class="fas fa-id-badge me-2"></i> DOWNLOAD GATE PASS
                             </a>
                         </div>

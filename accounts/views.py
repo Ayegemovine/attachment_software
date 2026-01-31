@@ -88,11 +88,11 @@ def application_success(request, application_number):
 def check_status(request):
     attachee = None
     if request.method == 'POST':
-        query = request.POST.get('search_query')
+        query = request.POST.get('search_query', '').strip()
         attachee = Attachee.objects.filter(
-            Q(tracking_id=query) |
-            Q(email=query) |
-            Q(national_id_number=query)
+            Q(tracking_id__iexact=query) |
+            Q(email__iexact=query) |
+            Q(national_id_number__iexact=query)
         ).first()
         if attachee:
             today = timezone.now().date()
@@ -168,13 +168,17 @@ def import_attachees(request):
 
 @user_passes_test(is_admin, login_url='home')
 def dashboard(request):
-    """Enhanced Dashboard handling Export, Clickable Stages, and Search"""
+    """Enhanced Dashboard handling Export, Clickable Stages, Search, and Scalable Rows"""
     if request.GET.get('export') == 'true':
         return export_attachees(request)
 
     search_query = request.GET.get('q', '')
-    status_filter = request.GET.get('status', '')
-    rows_per_page = request.GET.get('rows', 5)
+    status_filter = request.GET.get('status', 'Pending') 
+    
+    try:
+        rows_per_page = int(request.GET.get('rows', 5))
+    except ValueError:
+        rows_per_page = 5
 
     attachees_list = Attachee.objects.all().order_by('-created_at')
 
@@ -186,7 +190,7 @@ def dashboard(request):
             Q(email__icontains=search_query)
         )
 
-    if status_filter:
+    if status_filter and status_filter != '':
         attachees_list = attachees_list.filter(status=status_filter)
 
     paginator = Paginator(attachees_list, rows_per_page)
@@ -311,35 +315,45 @@ def draw_header_and_border(p):
 
 
 def draw_footer(p, attachee, current_y):
-    footer_y = max(current_y, 1.8*inch)
+    """Standardized professional footer with clear spacing and no overlaps"""
+    # 1. SETTING THE BASE: Higher base to prevent border overlap
+    footer_y = max(current_y - 0.5*inch, 2.8*inch)
+    left_margin = 0.8*inch
+    
+    # 2. SIGN-OFF: Standard "Yours sincerely"
+    p.setFont("Helvetica", 10)
+    p.drawString(left_margin, footer_y + 0.8*inch, "Yours sincerely,")
+
+    # 3. SIGNATURE IMAGE: Positioned clearly below sign-off
     s_path = os.path.join(settings.BASE_DIR, 'static/images/signature.png')
     if os.path.exists(s_path):
         p.drawImage(
-            s_path, 3.7*inch, footer_y + 0.15*inch, width=1.3*inch,
+            s_path, left_margin, footer_y + 0.25*inch, width=1.3*inch,
             preserveAspectRatio=True, mask='auto'
         )
 
-    p.setFont("Helvetica-Bold", 9)
-    p.drawCentredString(4.4*inch, footer_y + 0.12*inch, "___________________")
-    p.drawCentredString(4.4*inch, footer_y - 0.02*inch, "Ombwayo Michael")
-    p.setFont("Helvetica", 8)
-    p.drawCentredString(4.4*inch, footer_y - 0.12*inch, "CEO, Eujim Solutions")
+    # 4. NAME AND TITLE: Anchored on the left
+    p.setFont("Helvetica-Bold", 10)
+    p.drawString(left_margin, footer_y - 0.05*inch, "Ombwayo Michael")
+    p.setFont("Helvetica", 9)
+    p.drawString(left_margin, footer_y - 0.2*inch, "CEO, Eujim Solutions Limited")
 
-    # --- Compact Official Company Stamp (Tight margins, Large font) ---
-    stamp_x, stamp_y = 3.5*inch, footer_y - 1.4*inch
-    s_w, s_h = 2.2*inch, 1.2*inch 
+    # 5. OFFICIAL STAMP: Pushed right to avoid overlapping the signature/title
+    stamp_x, stamp_y = 3.3*inch, footer_y - 0.7*inch
+    s_w, s_h = 2.4*inch, 1.3*inch 
 
-    p.setStrokeColorRGB(0.2, 0.4, 0.7)
+    p.setStrokeColorRGB(0.2, 0.4, 0.7) # Branded Blue
     p.setLineWidth(1.5)
     p.rect(stamp_x, stamp_y, s_w, s_h, stroke=1, fill=0)
     
     p.setFillColorRGB(0.2, 0.4, 0.7)
     p.setFont("Helvetica-Bold", 8.5)
-    p.drawCentredString(stamp_x + 1.1*inch, stamp_y + 1.0*inch, "EUJIM SOLUTIONS LIMITED")
+    p.drawCentredString(stamp_x + 1.2*inch, stamp_y + 1.1*inch, "EUJIM SOLUTIONS LIMITED")
 
     p.setFont("Helvetica-Bold", 7.5)
-    p.drawCentredString(stamp_x + 1.1*inch, stamp_y + 0.85*inch, "P.O. BOX 7034-00200 NAIROBI")
+    p.drawCentredString(stamp_x + 1.2*inch, stamp_y + 0.95*inch, "P.O. BOX 7034-00200 NAIROBI")
 
+    # Verification Date in Red inside the stamp
     p.setFillColorRGB(0.8, 0.1, 0.1)
     p.setFont("Helvetica-Bold", 10)
     dt_txt = (
@@ -347,18 +361,19 @@ def draw_footer(p, attachee, current_y):
         if attachee.completion_date
         else timezone.now().strftime('%d %b %Y').upper()
     )
-    p.drawCentredString(stamp_x + 1.1*inch, stamp_y + 0.55*inch, dt_txt)
+    p.drawCentredString(stamp_x + 1.2*inch, stamp_y + 0.65*inch, dt_txt)
 
     p.setFillColorRGB(0.2, 0.4, 0.7)
     p.setFont("Helvetica-Bold", 7.5) 
-    p.drawCentredString(stamp_x + 1.1*inch, stamp_y + 0.33*inch, "Email: info@eujimsolutions.com")
-    p.drawCentredString(stamp_x + 1.1*inch, stamp_y + 0.15*inch, "TEL: 0113281424/0718099959")
+    p.drawCentredString(stamp_x + 1.2*inch, stamp_y + 0.4*inch, "Email: info@eujimsolutions.com")
+    p.drawCentredString(stamp_x + 1.2*inch, stamp_y + 0.2*inch, "TEL: 0113281424/0718099959")
 
+    # 6. QR CODE: Isolated on the far right for verification
     qr = qrcode.make(f"VERIFIED REF: {attachee.tracking_id}")
     qb = io.BytesIO()
     qr.save(qb, format='PNG')
     qb.seek(0)
-    p.drawImage(ImageReader(qb), 6.1*inch, stamp_y, width=inch, height=inch)
+    p.drawImage(ImageReader(qb), 6.5*inch, footer_y - 0.6*inch, width=1.0*inch, height=1.0*inch)
 
 
 def download_completion_letter(request, attachee_id):
@@ -393,7 +408,6 @@ def download_completion_letter(request, attachee_id):
     p.setFont("Helvetica", 11)
     full_name = f"{attachee.first_name.upper()} {attachee.last_name.upper()}"
 
-    # Certification-focused content with mentorship and skill transformation
     paras = [
         (
             f"This is to certify that {full_name}, a student from {attachee.institution}, "

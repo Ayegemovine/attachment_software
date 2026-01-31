@@ -22,20 +22,21 @@
 
         /* Angled Header Branding */
         .navbar { padding: 0; background-color: var(--eujim-green) !important; position: relative; min-height: 70px; }
+        
         .logo-container { 
             background: white; 
             padding: 5px 50px 5px 25px; 
             clip-path: polygon(0 0, 100% 0, 85% 100%, 0% 100%);
             display: flex;
             align-items: center;
-            height: 70px; /* Matches Navbar height */
+            height: 70px; 
             box-shadow: 5px 0 15px rgba(0,0,0,0.1);
             position: absolute;
             top: 0;
             left: 0;
             z-index: 1050;
         }
-        
+
         .navbar-brand img {
             max-height: 55px;
             width: auto;
@@ -45,14 +46,35 @@
 
         .bg-eujim { background-color: var(--eujim-green) !important; }
         .text-eujim { color: var(--eujim-green) !important; }
-        .nav-link { font-weight: 500; transition: 0.3s; color: white !important; }
-        .nav-link:hover { opacity: 0.8; }
+        
+        /* Nav Link Optimizations */
+        .nav-link { font-weight: 500; transition: 0.3s; color: white !important; padding: 0.8rem 1rem !important; }
+        .nav-link:hover { background-color: rgba(255,255,255,0.1); border-radius: 5px; }
+
+        /* --- MOBILE UI OPTIMIZATIONS --- */
+        @media (max-width: 991.98px) {
+            .logo-container { 
+                padding: 5px 35px 5px 15px; 
+                clip-path: none; /* Simplify for mobile to save space */
+                width: auto;
+                position: relative; /* Allow menu button to sit beside it */
+            }
+            .navbar { min-height: auto; padding: 5px 0; }
+            .navbar-collapse { 
+                background-color: var(--eujim-dark); 
+                margin-top: 5px; 
+                padding: 15px; 
+                border-radius: 0 0 15px 15px;
+            }
+            .nav-link { border-bottom: 1px solid rgba(255,255,255,0.05); }
+            .nav-link:last-child { border-bottom: none; }
+        }
 
         /* Compact Footer */
         footer { 
             background-color: var(--eujim-dark); 
             color: white; 
-            padding: 1rem 0; 
+            padding: 1.5rem 0; 
             flex-shrink: 0; 
             border-top: 1px solid rgba(255,255,255,0.1);
         }
@@ -63,7 +85,7 @@
 </head>
 <body class="bg-light">
     <div class="content-wrapper">
-        <div class="top-bar d-none d-md-block">
+        <div class="top-bar d-none d-lg-block">
             <div class="container d-flex justify-content-between align-items-center">
                 <div>
                     <i class="fas fa-map-marker-alt me-1"></i> Gesora Road, Utawala 
@@ -88,21 +110,21 @@
                     </a>
                 </div>
                 
-                <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 
                 <div class="collapse navbar-collapse" id="navbarNav">
-                    <ul class="navbar-nav ms-auto align-items-center">
-                        <li class="nav-item"><a class="nav-link" href="{% url 'home' %}"><i class="fas fa-home me-1"></i> Home</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{% url 'apply' %}"><i class="fas fa-user-plus me-1"></i> Apply</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{% url 'check_status' %}"><i class="fas fa-search me-1"></i> Check Status</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}"><i class="fas fa-tachometer-alt me-1"></i> Dashboard</a></li>
+                    <ul class="navbar-nav ms-auto align-items-lg-center">
+                        <li class="nav-item"><a class="nav-link" href="{% url 'home' %}"><i class="fas fa-home me-2"></i> Home</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'apply' %}"><i class="fas fa-user-plus me-2"></i> Apply</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'check_status' %}"><i class="fas fa-search me-2"></i> Check Status</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'dashboard' %}"><i class="fas fa-tachometer-alt me-2"></i> Dashboard</a></li>
                         {% if user.is_authenticated %}
-                            <li class="nav-item ms-lg-3">
+                            <li class="nav-item ms-lg-3 mt-2 mt-lg-0">
                                 <form method="post" action="{% url 'logout' %}" class="d-inline">
                                     {% csrf_token %}
-                                    <button type="submit" class="nav-link btn btn-link text-white border-0 p-0 m-0 fw-bold">
+                                    <button type="submit" class="btn btn-outline-light btn-sm w-100 fw-bold px-3">
                                         <i class="fas fa-sign-out-alt me-1"></i> Logout
                                     </button>
                                 </form>
@@ -114,23 +136,32 @@
         </nav>
 
         <div class="container mt-4 mb-4">
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm rounded-3" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="show" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+
             {% block content %}{% endblock %}
         </div>
     </div>
 
     <footer>
         <div class="container-fluid px-3 px-md-5">
-            <div class="row align-items-center text-center text-md-start g-2">
-                <div class="col-md-3">
+            <div class="row align-items-center g-3">
+                <div class="col-12 col-md-3 text-center text-md-start">
                     <span class="text-eujim fw-bold">EUJIM SOLUTIONS</span>
                 </div>
-                <div class="col-md-6">
-                    <div class="footer-info-item d-flex flex-wrap justify-content-center justify-content-md-start">
-                        <span class="me-3"><i class="fas fa-phone me-1"></i> +254 113281424</span>
-                        <span class="me-3"><i class="fas fa-envelope me-1"></i> info@eujimsolutions.com</span>
+                <div class="col-12 col-md-6 text-center">
+                    <div class="footer-info-item d-flex flex-column flex-sm-row justify-content-center">
+                        <span class="mb-2 mb-sm-0 mx-sm-3"><i class="fas fa-phone me-2"></i> +254 113281424</span>
+                        <span><i class="fas fa-envelope me-2"></i> info@eujimsolutions.com</span>
                     </div>
                 </div>
-                <div class="col-md-3 text-md-end">
+                <div class="col-12 col-md-3 text-center text-md-end">
                     <span class="footer-copyright">&copy; 2026 Eujim Solutions Ltd.</span>
                 </div>
             </div>
