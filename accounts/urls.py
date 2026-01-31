@@ -34,4 +34,8 @@ urlpatterns = [
     path('download-pass/<int:attachee_id>/', views.download_gate_pass, name='download_gate_pass'),
     path('download-completion/<int:attachee_id>/', views.download_completion_letter, name='download_completion_letter'),
     path('recommendation/<int:attachee_id>/', views.download_recommendation_letter, name='download_recommendation_letter'),
+
+    # --- NEW: Attachment ID Card Route ---
+    # This maps the "Download ID Card" buttons to the generation function in views.py
+    path('download-id/<int:attachee_id>/', views.download_id_card, name='download_id_card'),
 ]

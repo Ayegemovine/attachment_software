@@ -129,7 +129,7 @@
                         <div>
                             <span class="status-header-pill mb-2 d-inline-block" style="background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); padding: 5px 15px; border-radius: 50px; font-size: 0.8rem; font-weight: bold;">APPLICATION FOUND</span>
                             <h4 class="mb-0 fw-bold">{{ attachee.first_name }} {{ attachee.last_name }}</h4>
-                            <span class="opacity-75 small">Tracking ID: {{ attachee.tracking_id }}</span>
+                            <span class="opacity-75 small">Reference No: {{ attachee.tracking_id }}</span>
                         </div>
                         <div class="text-end">
                             <div class="small opacity-75 mb-1 text-uppercase fw-bold" style="font-size: 0.7rem;">Status</div>
@@ -148,11 +148,11 @@
                         </div>
                         <div class="timeline-step {% if attachee.status != 'Pending' %}active{% endif %}">
                             <div class="step-icon"><i class="fas fa-user-check"></i></div>
-                            <small class="fw-bold">Reviewed</small>
-                        </div>
-                        <div class="timeline-step {% if attachee.status == 'Approved' or attachee.status == 'Completed' %}active{% endif %}">
-                            <div class="step-icon"><i class="fas fa-check-circle"></i></div>
                             <small class="fw-bold">Approved</small>
+                        </div>
+                        <div class="timeline-step {% if attachee.status == 'In-Progress' or attachee.status == 'Completed' %}active{% endif %}">
+                            <div class="step-icon"><i class="fas fa-walking"></i></div>
+                            <small class="fw-bold">Admitted</small>
                         </div>
                         <div class="timeline-step {% if attachee.status == 'Completed' %}active{% endif %}">
                             <div class="step-icon">
@@ -213,6 +213,18 @@
                                 </a>
                             </div>
                         </div>
+
+                        {% elif attachee.status == 'In-Progress' %}
+                        <div class="text-center mb-4">
+                            <h5 class="fw-bold" style="color: #55D47A;">Welcome Aboard!</h5>
+                            <p class="text-muted small">You have officially started your attachment. Download your staff ID below.</p>
+                            <div class="mt-4">
+                                <a href="{% url 'download_id_card' attachee.id %}" class="btn btn-primary rounded-pill px-5 py-2 shadow-sm fw-bold">
+                                    <i class="fas fa-id-card me-2"></i> DOWNLOAD ATTACHMENT ID
+                                </a>
+                            </div>
+                        </div>
+
                         {% elif attachee.status == 'Approved' %}
                         <div class="text-center">
                             <a href="{% url 'download_gate_pass' attachee.id %}" class="btn btn-dark rounded-pill px-5 py-2 shadow-sm fw-bold">

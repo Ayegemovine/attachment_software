@@ -112,6 +112,16 @@
             </a>
         </div>
         <div class="col-md">
+            <a href="?status=In-Progress&q={{ query }}&rows={{ rows }}" class="text-decoration-none">
+                <div class="card shadow-sm rounded-4 p-3 glass-card {% if status_filter == 'In-Progress' %}filter-active{% endif %}" style="background-color: #6610f2; color: white;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div><h6 class="text-uppercase small opacity-75">Admitted</h6><h2 class="fw-bold mb-0">{{ in_progress }}</h2></div>
+                        <i class="fas fa-walking fa-2x opacity-25"></i>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md">
             <a href="?status=Completed&q={{ query }}&rows={{ rows }}" class="text-decoration-none">
                 <div class="card shadow-sm rounded-4 bg-info text-white p-3 glass-card {% if status_filter == 'Completed' %}filter-active{% endif %}">
                     <div class="d-flex justify-content-between align-items-center">
@@ -191,6 +201,7 @@
                             <td>
                                 <span class="badge rounded-pill px-3 py-2 fw-bold text-uppercase {% if a.status == 'Pending' %}status-pending-pulse{% endif %}" style="font-size: 0.65rem; 
                                     {% if a.status == 'Approved' %}background-color: #d1e7dd; color: #0f5132;
+                                    {% elif a.status == 'In-Progress' %}background-color: #e0cffc; color: #6610f2;
                                     {% elif a.status == 'Rejected' %}background-color: #f8d7da; color: #842029;
                                     {% elif a.status == 'Completed' %}background-color: #cfe2ff; color: #084298;
                                     {% else %}background-color: #fff3cd; color: #856404;{% endif %}">
@@ -221,8 +232,11 @@
                                         <i class="fas fa-eye me-1"></i> VIEW
                                     </button>
                                     
-                                    {% if a.status == 'Approved' or a.status == 'Completed' %}
-                                        <a href="{% url 'download_gate_pass' a.id %}" class="btn btn-sm btn-dark px-3"><i class="fas fa-qrcode"></i></a>
+                                    {% if a.status == 'Approved' or a.status == 'In-Progress' or a.status == 'Completed' %}
+                                        <a href="{% url 'download_gate_pass' a.id %}" class="btn btn-sm btn-dark px-3" title="Generate Documents"><i class="fas fa-qrcode"></i></a>
+                                    {% endif %}
+                                    {% if a.status == 'In-Progress' %}
+                                        <a href="{% url 'download_id_card' a.id %}" class="btn btn-sm btn-primary px-3" title="Download ID Card"><i class="fas fa-id-card"></i></a>
                                     {% endif %}
                                 </div>
                             </td>
@@ -261,6 +275,7 @@
                             <select name="status" id="modalStatusSelect" class="form-select fw-bold mb-3 border-2 shadow-sm">
                                 <option value="Pending">Pending</option>
                                 <option value="Approved">Approved</option>
+                                <option value="In-Progress">Admit (In-Progress)</option>
                                 <option value="Rejected">Rejected</option>
                                 <option value="Completed">Completed</option>
                             </select>

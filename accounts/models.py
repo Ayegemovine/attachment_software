@@ -3,9 +3,11 @@ from django.utils import timezone
 import datetime
 
 class Attachee(models.Model):
+    # UPDATED: Added 'In-Progress' to the status lifecycle
     STATUS_CHOICES = [
         ('Pending', 'Pending'),
         ('Approved', 'Approved'),
+        ('In-Progress', 'In-Progress'),
         ('Rejected', 'Rejected'),
         ('Completed', 'Completed'),
     ]
