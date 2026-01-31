@@ -30,12 +30,12 @@ def add_attachee(request):
         if form.is_valid():
             instance = form.save()
             
-            # --- NEW: Application Received Email ---
+            # --- Application Received Email ---
             action_url = request.build_absolute_uri('/check-status/')
             body_text = (
                 f"Your application has been well received and is currently in progress. "
-                f"Please note that your tracking number will be used to track your progress "
-                f"and verify the authenticity of your documents upon completion."
+                f"Please note that your tracking number will be used as your Reference Number "
+                f"to track progress and verify the authenticity of your documents."
             )
             
             html_content = render_to_string('accounts/email_template.html', {
@@ -48,14 +48,13 @@ def add_attachee(request):
             })
             
             email = EmailMultiAlternatives(
-                subject=f"Application Received - {instance.tracking_id}",
+                subject=f"Application Received - Ref: {instance.tracking_id}",
                 body=strip_tags(html_content),
                 from_email=settings.DEFAULT_FROM_EMAIL,
                 to=[instance.email]
             )
             email.attach_alternative(html_content, "text/html")
             email.send(fail_silently=True)
-            # --- End Email Logic ---
 
             return redirect('application_success', application_number=instance.tracking_id)
     else:
@@ -98,7 +97,7 @@ def export_attachees(request):
     response['Content-Disposition'] = f'attachment; filename="Eujim_Applicants_{timezone.now().date()}.csv"'
     
     writer = csv.writer(response)
-    writer.writerow(['Tracking ID', 'First Name', 'Last Name', 'Email', 'Phone', 'Institution', 'Status', 'Applied On'])
+    writer.writerow(['Reference No.', 'First Name', 'Last Name', 'Email', 'Phone', 'Institution', 'Status', 'Applied On'])
     
     for a in attachees:
         writer.writerow([a.tracking_id, a.first_name, a.last_name, a.email, a.phone, a.institution, a.status, a.created_at])
@@ -118,7 +117,7 @@ def import_attachees(request):
             file_data = csv_file.read().decode("utf-8")
             lines = file_data.split("\n")
             
-            for line in lines[1:]: # Skip header row
+            for line in lines[1:]: 
                 fields = line.split(",")
                 if len(fields) >= 6:
                     Attachee.objects.create(
@@ -176,7 +175,7 @@ def dashboard(request):
 
 @user_passes_test(is_admin)
 def update_status(request, pk):
-    """UPDATED: Detailed Email Messaging for Approvals and Completions"""
+    """Detailed Email Messaging for Approvals and Completions"""
     if request.method == "POST":
         attachee = get_object_or_404(Attachee, pk=pk)
         old_status = attachee.status
@@ -194,7 +193,6 @@ def update_status(request, pk):
             if old_status != new_status:
                 action_url = request.build_absolute_uri('/check-status/')
                 
-                # --- NEW: Enhanced Status Mapping ---
                 status_map = {
                     'Approved': (
                         "Congratulations! Your application has been APPROVED. We expect total discipline and full cooperation during your tenure with us.", 
@@ -222,7 +220,7 @@ def update_status(request, pk):
                     })
                     
                     email = EmailMultiAlternatives(
-                        subject=f"Status Update: {attachee.tracking_id}",
+                        subject=f"Status Update - Ref: {attachee.tracking_id}",
                         body=strip_tags(html_content),
                         from_email=settings.DEFAULT_FROM_EMAIL,
                         to=[attachee.email]
@@ -232,6 +230,181 @@ def update_status(request, pk):
             
             messages.success(request, f"Status for {attachee.first_name} updated to {new_status}.")
     return redirect('dashboard')
+
+# --- PDF BRANDING & UTILITY FUNCTIONS ---
+
+def draw_header_and_border(p):
+    """Sharp letterhead placement with double-line brand borders"""
+    brand_color = (85/255, 212/255, 122/255) 
+    p.setStrokeColorRGB(*brand_color)
+    p.setLineWidth(3); p.rect(0.4*inch, 0.4*inch, 7.5*inch, 10.9*inch)
+    p.setLineWidth(1); p.rect(0.45*inch, 0.45*inch, 7.4*inch, 10.8*inch)
+    p.setFillColorRGB(0, 0, 0) 
+
+    letterhead_path = os.path.join(settings.BASE_DIR, 'static/images/letterhead.png')
+    
+    if os.path.exists(letterhead_path):
+        banner_height = 1.3 * inch
+        p.drawImage(letterhead_path, 0.5*inch, A4[1] - banner_height - 0.5*inch, width=7.27*inch, height=banner_height, mask='auto', preserveAspectRatio=True)
+    else:
+        p.setFillColorRGB(0.1, 0.1, 0.1); p.setFont("Helvetica-Bold", 14)
+        p.drawCentredString(4.15*inch, 10.2*inch, "EUJIM SOLUTIONS LIMITED")
+        p.setFont("Helvetica", 9); p.drawCentredString(4.15*inch, 10.05*inch, "Gesora Road, Utawala")
+        p.setFillColorRGB(0, 0, 0)
+
+def draw_footer(p, attachee, current_y):
+    footer_y = max(current_y, 1.8*inch)
+    
+    sig_path = os.path.join(settings.BASE_DIR, 'static/images/signature.png')
+    if os.path.exists(sig_path):
+        p.drawImage(sig_path, 3.7*inch, footer_y + 0.15*inch, width=1.3*inch, preserveAspectRatio=True, mask='auto')
+    
+    p.setFont("Helvetica-Bold", 9)
+    p.drawCentredString(4.4*inch, footer_y + 0.12*inch, "__________________________")
+    p.drawCentredString(4.4*inch, footer_y - 0.02*inch, "Ombwayo Michael")
+    p.setFont("Helvetica", 8)
+    p.drawCentredString(4.4*inch, footer_y - 0.12*inch, "CEO and Founder, Eujim Solutions Ltd")
+    
+    stamp_x = 3.2*inch
+    stamp_y = footer_y - 1.3*inch
+    stamp_width = 2.4*inch
+    stamp_height = 1.1*inch
+    
+    p.setStrokeColorRGB(0.2, 0.4, 0.7); p.setLineWidth(1.5)
+    p.rect(stamp_x, stamp_y, stamp_width, stamp_height, stroke=1, fill=0)
+    p.setFillColorRGB(0.2, 0.4, 0.7); p.setFont("Helvetica-Bold", 8.5)
+    p.drawCentredString(stamp_x + (stamp_width/2), stamp_y + 0.90*inch, "EUJIM SOLUTIONS LIMITED")
+    
+    # STAMP UPDATED: P.O. BOX INSTEAD OF TRACKING ID
+    p.setFont("Helvetica-Bold", 7.5)
+    p.drawCentredString(stamp_x + (stamp_width/2), stamp_y + 0.75*inch, "P.O. BOX 7034-00220, NAIROBI")
+    
+    p.setFillColorRGB(0.8, 0.1, 0.1); p.setFont("Helvetica-Bold", 10)
+    date_text = attachee.completion_date.strftime('%d %b %Y').upper() if attachee.completion_date else timezone.now().strftime('%d %b %Y').upper()
+    p.drawCentredString(stamp_x + (stamp_width/2), stamp_y + 0.45*inch, date_text)
+    
+    p.setFillColorRGB(0.2, 0.4, 0.7); p.setFont("Helvetica-Bold", 6.5)
+    p.drawCentredString(stamp_x + (stamp_width/2), stamp_y + 0.22*inch, "Email: info@eujimsolutions.com")
+    p.drawCentredString(stamp_x + (stamp_width/2), stamp_y + 0.08*inch, "Tel: +254 113281424 / +254 718099959")
+
+    qr = qrcode.make(f"VERIFIED REF: {attachee.tracking_id}"); qb = io.BytesIO()
+    qr.save(qb, format='PNG'); qb.seek(0)
+    p.drawImage(ImageReader(qb), 6.0*inch, stamp_y, width=1.0*inch, height=1.0*inch)
+
+def download_completion_letter(request, attachee_id):
+    attachee = get_object_or_404(Attachee, id=attachee_id)
+    is_male = attachee.gender.lower() == 'male'
+    subj, poss, obj = ("He", "his", "him") if is_male else ("She", "her", "her")
+    duration_weeks = (attachee.end_date - attachee.start_date).days // 7
+    
+    buffer = io.BytesIO(); p = canvas.Canvas(buffer, pagesize=A4); draw_header_and_border(p)
+    
+    y_title = 9.2*inch 
+    y_start = 8.9*inch
+    
+    p.setFont("Helvetica-Bold", 13)
+    p.drawCentredString(4.15*inch, y_title, f"CERTIFICATE OF COMPLETION ({attachee.tracking_id})")
+    
+    p.setFont("Helvetica", 11)
+    paras = [
+        f"This letter serves to formally certify that {attachee.first_name} {attachee.last_name}, a student from {attachee.institution}, has successfully completed {poss} comprehensive industrial attachment at EUJIM SOLUTIONS LIMITED. The program ran from {attachee.start_date.strftime('%d %B %Y')} to {attachee.end_date.strftime('%d %B %Y')}, totaling {duration_weeks} weeks of professional engagement under Reference No: {attachee.tracking_id}.",
+        f"During this tenure, {subj.lower()} was fully integrated into our technical operations. {subj} demonstrated an exceptional work ethic, showing great initiative in problem-solving and technical execution. {subj} was involved in numerous projects where {subj.lower()} consistently met project deadlines and maintained high-quality standards.",
+        f"In addition to {poss} technical growth, {subj.lower()} exhibited strong interpersonal skills and professional discipline. This certificate recognizes {poss} successful completion of all attachment requirements. We highly appreciate {poss} contribution to our team and wish {obj} the very best in {poss} future career pursuits."
+    ]
+    
+    y = y_start
+    for txt in paras:
+        to = p.beginText(0.8*inch, y); to.setLeading(14)
+        wrapped = textwrap.wrap(txt, width=90)
+        for line in wrapped: to.textLine(line)
+        p.drawText(to); y -= (len(wrapped) * 14) + 10
+    
+    draw_footer(p, attachee, y - 0.2*inch)
+    p.showPage(); p.save(); buffer.seek(0)
+    return FileResponse(buffer, as_attachment=False, content_type='application/pdf', filename=f'Completion_{attachee.tracking_id}.pdf')
+
+def download_recommendation_letter(request, attachee_id):
+    attachee = get_object_or_404(Attachee, id=attachee_id)
+    is_male = attachee.gender.lower() == 'male'
+    subj, poss, obj = ("He", "his", "him") if is_male else ("She", "her", "her")
+    duration_weeks = (attachee.end_date - attachee.start_date).days // 7
+    
+    buffer = io.BytesIO(); p = canvas.Canvas(buffer, pagesize=A4); draw_header_and_border(p)
+    
+    y_title = 9.2*inch
+    y_start = 8.9*inch
+    
+    p.setFont("Helvetica-Bold", 13)
+    p.drawCentredString(4.15*inch, y_title, f"LETTER OF RECOMMENDATION ({attachee.tracking_id})")
+    
+    p.setFont("Helvetica", 11)
+    paras = [
+        f"It is with great pleasure that I recommend {attachee.first_name} {attachee.last_name} for future professional roles or academic pursuits. {subj} recently completed a rigorous {duration_weeks}-week industrial attachment at EUJIM SOLUTIONS where {subj.lower()} made a lasting impression on our team under Reference No: {attachee.tracking_id}.",
+        f"Throughout {poss} time with us, {subj.lower()} displayed a commendable work ethic and a proactive mindset. {subj} proved to be a reliable, disciplined, and technically competent individual who consistently exceeded our expectations in every task assigned.",
+        f"Beyond technical tasks, {subj.lower()} was a collaborative team player who interacted positively with colleagues and demonstrated a high level of professional integrity. We are confident {subj.lower()} possesses the character to be a valuable asset to any organization, and we wish {obj} continued success."
+    ]
+    
+    y = y_start
+    for txt in paras:
+        to = p.beginText(0.8*inch, y); to.setLeading(14)
+        wrapped = textwrap.wrap(txt, width=90)
+        for line in wrapped: to.textLine(line)
+        p.drawText(to); y -= (len(wrapped) * 14) + 10
+    
+    draw_footer(p, attachee, y - 0.2*inch)
+    p.showPage(); p.save(); buffer.seek(0)
+    return FileResponse(buffer, as_attachment=False, content_type='application/pdf', filename=f'Recommendation_{attachee.tracking_id}.pdf')
+
+def download_gate_pass(request, attachee_id):
+    attachee = get_object_or_404(Attachee, id=attachee_id)
+    if attachee.status != 'Approved':
+        return HttpResponse("Unauthorized", status=403)
+        
+    buffer = io.BytesIO(); p = canvas.Canvas(buffer, pagesize=A4); draw_header_and_border(p)
+    
+    y_title = 9.2*inch
+    y_detail = 8.8*inch
+    
+    p.setFont("Helvetica-Bold", 14)
+    p.drawCentredString(4.15*inch, y_title, f"OFFICIAL GATE PASS & ADMISSION LETTER ({attachee.tracking_id})")
+    
+    p.setFont("Helvetica-Bold", 11); p.drawString(1.0*inch, y_detail + 0.1*inch, "APPLICANT DETAILS")
+    p.line(1.0*inch, y_detail + 0.05*inch, 3.0*inch, y_detail + 0.05*inch)
+    
+    p.setFont("Helvetica", 10)
+    details = [
+        f"Full Name: {attachee.first_name} {attachee.last_name}",
+        f"Phone Number: {attachee.phone}",
+        f"National ID: {attachee.national_id_number}",
+        f"Gender: {attachee.gender}",
+        f"Institution: {attachee.institution}",
+        f"Reference No: {attachee.tracking_id}",
+        f"Duration: {attachee.start_date.strftime('%d %b %Y')} to {attachee.end_date.strftime('%d %b %Y')}"
+    ]
+    
+    curr_y = y_detail - 0.1*inch
+    for item in details:
+        p.drawString(1.0*inch, curr_y, item); curr_y -= 0.16*inch
+        
+    p.setFont("Helvetica-Bold", 11); p.drawString(1.0*inch, curr_y - 0.05*inch, "TERMS OF ENGAGEMENT")
+    p.line(1.0*inch, curr_y - 0.1*inch, 3.2*inch, curr_y - 0.1*inch)
+    
+    welcome_text = (
+        f"We are pleased to welcome you, {attachee.first_name}, to EUJIM SOLUTIONS LIMITED. "
+        "During the stated period, you will be an integral part of our team. "
+        "Please note that you are required to report to the office from Monday to Friday, "
+        "between 9:00 AM and 4:00 PM."
+    )
+    
+    p.setFont("Helvetica", 10) # NORMAL WEIGHT
+    to = p.beginText(1.0*inch, curr_y - 0.25*inch); to.setLeading(14)
+    wrapped = textwrap.wrap(welcome_text, width=95)
+    for line in wrapped: to.textLine(line)
+    p.drawText(to)
+    
+    draw_footer(p, attachee, curr_y - 1.2*inch)
+    p.showPage(); p.save(); buffer.seek(0)
+    return FileResponse(buffer, as_attachment=False, content_type='application/pdf', filename=f'GatePass_{attachee.tracking_id}.pdf')
 
 @user_passes_test(is_admin)
 def approve_student(request, attachee_id):
@@ -275,182 +448,3 @@ def submit_feedback(request, attachee_id):
         )
         return redirect('check_status')
     return render(request, 'accounts/submit_feedback.html', {'attachee': attachee})
-
-# --- PDF BRANDING & UTILITY FUNCTIONS ---
-
-def draw_header_and_border(p):
-    brand_color = (85/255, 212/255, 122/255) 
-    p.setStrokeColorRGB(*brand_color)
-    p.setLineWidth(3); p.rect(0.4*inch, 0.4*inch, 7.5*inch, 10.9*inch)
-    p.setLineWidth(1); p.rect(0.45*inch, 0.45*inch, 7.4*inch, 10.8*inch)
-    logo_path = os.path.join(settings.BASE_DIR, 'static/images/logo.png')
-    if os.path.exists(logo_path):
-        p.drawImage(logo_path, 3.65*inch, 10.4*inch, width=1.0*inch, preserveAspectRatio=True, mask='auto')
-    p.setFillColorRGB(0.1, 0.1, 0.1); p.setFont("Helvetica-Bold", 14)
-    p.drawCentredString(4.15*inch, 10.2*inch, "EUJIM SOLUTIONS LIMITED")
-    p.setFont("Helvetica", 9); p.drawCentredString(4.15*inch, 10.05*inch, "Gesora Road, Utawala")
-    p.drawCentredString(4.15*inch, 9.9*inch, "Tel: +254 113281424 / +254 718099959")
-    p.drawCentredString(4.15*inch, 9.75*inch, "Email: info@eujimsolutions.com | Web: www.eujimsolutions.com")
-    p.setStrokeColorRGB(*brand_color); p.line(0.8*inch, 9.6*inch, 7.5*inch, 9.6*inch)
-    p.setFillColorRGB(0, 0, 0)
-
-def draw_footer(p, attachee, current_y):
-    # Anchor point for the approval block
-    footer_y = max(current_y, 1.8*inch)
-    
-    # --- SIGNATURE BLOCK (Directly above the stamp) ---
-    sig_path = os.path.join(settings.BASE_DIR, 'static/images/signature.png')
-    if os.path.exists(sig_path):
-        p.drawImage(sig_path, 3.7*inch, footer_y + 0.15*inch, width=1.3*inch, preserveAspectRatio=True, mask='auto')
-    
-    p.setFont("Helvetica-Bold", 9)
-    p.drawCentredString(4.4*inch, footer_y + 0.12*inch, "__________________________")
-    p.drawCentredString(4.4*inch, footer_y - 0.02*inch, "Ombwayo Michael")
-    p.setFont("Helvetica", 8)
-    p.drawCentredString(4.4*inch, footer_y - 0.12*inch, "CEO and Founder, Eujim Solutions Ltd")
-    
-    # --- RECTANGULAR CORPORATE STAMP ---
-    stamp_x = 3.2*inch
-    stamp_y = footer_y - 1.3*inch
-    stamp_width = 2.4*inch
-    stamp_height = 1.1*inch
-    
-    # Stamp Border (Blue Ink)
-    p.setStrokeColorRGB(0.2, 0.4, 0.7)
-    p.setLineWidth(1.5)
-    p.rect(stamp_x, stamp_y, stamp_width, stamp_height, stroke=1, fill=0)
-    
-    # Internal Content (Blue Ink)
-    p.setFillColorRGB(0.2, 0.4, 0.7)
-    p.setFont("Helvetica-Bold", 8.5)
-    p.drawCentredString(stamp_x + (stamp_width/2), stamp_y + 0.90*inch, "EUJIM SOLUTIONS LIMITED")
-    p.setFont("Helvetica-Bold", 7.5)
-    p.drawCentredString(stamp_x + (stamp_width/2), stamp_y + 0.75*inch, f"ID: {attachee.tracking_id}")
-    
-    # Date in Middle (Red Ink)
-    p.setFillColorRGB(0.8, 0.1, 0.1)
-    p.setFont("Helvetica-Bold", 10)
-    completion_text = attachee.completion_date.strftime('%d %b %Y').upper() if attachee.completion_date else timezone.now().strftime('%d %b %Y').upper()
-    p.drawCentredString(stamp_x + (stamp_width/2), stamp_y + 0.45*inch, completion_text)
-    
-    # Contact (Blue Ink)
-    p.setFillColorRGB(0.2, 0.4, 0.7)
-    p.setFont("Helvetica-Bold", 6.5)
-    p.drawCentredString(stamp_x + (stamp_width/2), stamp_y + 0.22*inch, "Email: info@eujimsolutions.com")
-    p.drawCentredString(stamp_x + (stamp_width/2), stamp_y + 0.08*inch, "Tel: +254 113281424 / +254 718099959")
-
-    # QR Code
-    p.setStrokeColorRGB(0, 0, 0); p.setFillColorRGB(0, 0, 0)
-    qr = qrcode.make(f"VERIFIED: {attachee.tracking_id}"); qb = io.BytesIO()
-    qr.save(qb, format='PNG'); qb.seek(0)
-    p.drawImage(ImageReader(qb), 6.0*inch, stamp_y, width=1.0*inch, height=1.0*inch)
-
-def download_completion_letter(request, attachee_id):
-    attachee = get_object_or_404(Attachee, id=attachee_id)
-    
-    # Pronoun Logic
-    is_male = attachee.gender.lower() == 'male'
-    subj = "He" if is_male else "She"
-    poss = "his" if is_male else "her"
-    obj = "him" if is_male else "her"
-
-    duration_weeks = (attachee.end_date - attachee.start_date).days // 7
-    buffer = io.BytesIO(); p = canvas.Canvas(buffer, pagesize=A4); draw_header_and_border(p)
-    p.setFont("Helvetica-Bold", 13); p.drawCentredString(4.15*inch, 9.3*inch, "CERTIFICATE OF COMPLETION")
-    p.setFont("Helvetica", 11)
-    
-    paras = [
-        f"This letter serves to formally certify that {attachee.first_name} {attachee.last_name}, a student from {attachee.institution}, has successfully completed {poss} comprehensive industrial attachment at EUJIM SOLUTIONS LIMITED. The program ran from {attachee.start_date.strftime('%d %B %Y')} to {attachee.end_date.strftime('%d %B %Y')}, totaling {duration_weeks} weeks of professional engagement under Tracking ID: {attachee.tracking_id}.",
-        f"During this tenure, {subj.lower()} was fully integrated into our technical operations. {subj} demonstrated an exceptional work ethic, showing great initiative in problem-solving and technical execution. {subj} was involved in numerous projects where {subj.lower()} consistently met project deadlines and maintained high-quality standards.",
-        f"In addition to {poss} technical growth, {subj.lower()} exhibited strong interpersonal skills and professional discipline. This certificate recognizes {poss} successful completion of all attachment requirements. We highly appreciate {poss} contribution to our team and wish {obj} the very best in {poss} future career pursuits."
-    ]
-    
-    y = 8.9*inch
-    for txt in paras:
-        to = p.beginText(0.8*inch, y); to.setLeading(16)
-        wrapped = textwrap.wrap(txt, width=90)
-        for line in wrapped: to.textLine(line)
-        p.drawText(to); y -= (len(wrapped) * 16) + 18
-    
-    draw_footer(p, attachee, y - 0.5*inch)
-    p.showPage(); p.save(); buffer.seek(0)
-    return FileResponse(buffer, as_attachment=False, content_type='application/pdf', filename=f'Completion_{attachee.tracking_id}.pdf')
-
-def download_recommendation_letter(request, attachee_id):
-    attachee = get_object_or_404(Attachee, id=attachee_id)
-    
-    # Pronoun Logic
-    is_male = attachee.gender.lower() == 'male'
-    subj = "He" if is_male else "She"
-    poss = "his" if is_male else "her"
-    obj = "him" if is_male else "her"
-
-    duration_weeks = (attachee.end_date - attachee.start_date).days // 7
-    buffer = io.BytesIO(); p = canvas.Canvas(buffer, pagesize=A4); draw_header_and_border(p)
-    p.setFont("Helvetica-Bold", 13); p.drawCentredString(4.15*inch, 9.3*inch, "LETTER OF RECOMMENDATION")
-    p.setFont("Helvetica", 11)
-    
-    paras = [
-        f"It is with great pleasure that I recommend {attachee.first_name} {attachee.last_name} for future professional roles or academic pursuits. {subj} recently completed a rigorous {duration_weeks}-week industrial attachment at EUJIM SOLUTIONS (ID: {attachee.tracking_id}) where {subj.lower()} made a lasting impression on our team.",
-        f"Throughout {poss} time with us, {subj.lower()} displayed a commendable work ethic and a proactive mindset. {subj} proved to be a reliable, disciplined, and technically competent individual who consistently exceeded our expectations in every task assigned.",
-        f"Beyond technical tasks, {subj.lower()} was a collaborative team player who interacted positively with colleagues and demonstrated a high level of professional integrity. We are confident {subj.lower()} possesses the character to be a valuable asset to any organization, and we wish {obj} continued success."
-    ]
-    
-    y = 8.9*inch
-    for txt in paras:
-        to = p.beginText(0.8*inch, y); to.setLeading(16)
-        wrapped = textwrap.wrap(txt, width=90)
-        for line in wrapped: to.textLine(line)
-        p.drawText(to); y -= (len(wrapped) * 16) + 18
-    
-    draw_footer(p, attachee, y - 0.5*inch)
-    p.showPage(); p.save(); buffer.seek(0)
-    return FileResponse(buffer, as_attachment=False, content_type='application/pdf', filename=f'Recommendation_{attachee.tracking_id}.pdf')
-
-def download_gate_pass(request, attachee_id):
-    attachee = get_object_or_404(Attachee, id=attachee_id)
-    if attachee.status != 'Approved':
-        return HttpResponse("Unauthorized: Gate Pass is only available for active, approved attachments.", status=403)
-        
-    buffer = io.BytesIO(); p = canvas.Canvas(buffer, pagesize=A4); draw_header_and_border(p)
-    p.setFont("Helvetica-Bold", 14); p.drawCentredString(4.15*inch, 9.3*inch, "OFFICIAL GATE PASS & ADMISSION LETTER")
-    p.setFont("Helvetica-Bold", 11); p.drawString(1.0*inch, 8.8*inch, "APPLICANT DETAILS")
-    p.line(1.0*inch, 8.75*inch, 3.0*inch, 8.75*inch)
-    
-    p.setFont("Helvetica", 10)
-    details = [
-        f"Full Name: {attachee.first_name} {attachee.last_name}",
-        f"Phone Number: {attachee.phone}",
-        f"National ID: {attachee.national_id_number}",
-        f"Gender: {attachee.gender}",
-        f"Institution: {attachee.institution}",
-        f"Tracking ID: {attachee.tracking_id}",
-        f"Duration: {attachee.start_date.strftime('%d %b %Y')} to {attachee.end_date.strftime('%d %b %Y')}"
-    ]
-    
-    y_detail = 8.5*inch
-    for item in details:
-        p.drawString(1.0*inch, y_detail, item)
-        y_detail -= 0.22*inch
-        
-    p.setFont("Helvetica-Bold", 11); p.drawString(1.0*inch, y_detail - 0.2*inch, "TERMS OF ENGAGEMENT")
-    p.line(1.0*inch, y_detail - 0.25*inch, 3.2*inch, y_detail - 0.25*inch)
-    
-    p.setFont("Helvetica", 11)
-    welcome_text = (
-        f"We are pleased to welcome you, {attachee.first_name}, to EUJIM SOLUTIONS LIMITED. "
-        f"During the stated period, you will be an integral part of our team. "
-        f"Please note that you are required to report to the office from Monday to Friday, "
-        f"between 9:00 AM and 4:00 PM."
-    )
-    
-    y_para = y_detail - 0.5*inch
-    to = p.beginText(1.0*inch, y_para); to.setLeading(16)
-    wrapped = textwrap.wrap(welcome_text, width=85)
-    for line in wrapped: to.textLine(line)
-    p.drawText(to)
-    
-    current_y = y_para - (len(wrapped) * 16) - 0.3*inch
-    draw_footer(p, attachee, current_y)
-    p.showPage(); p.save(); buffer.seek(0)
-    return FileResponse(buffer, as_attachment=False, content_type='application/pdf', filename=f'GatePass_{attachee.tracking_id}.pdf')
