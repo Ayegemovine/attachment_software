@@ -24,7 +24,7 @@ from reportlab.lib.utils import ImageReader
 
 # Helper for Admin access
 def is_admin(user):
-    return user.is_superuser
+    return user.is_authenticated and user.is_superuser
 
 
 def home(request):
@@ -100,7 +100,7 @@ def check_status(request):
     return render(request, 'accounts/check_status.html', {'attachee': attachee})
 
 
-@user_passes_test(is_admin)
+@user_passes_test(is_admin, login_url='home')
 def export_attachees(request):
     """Generates a CSV of the current filtered list"""
     status_filter = request.GET.get('status', '')
@@ -135,7 +135,7 @@ def export_attachees(request):
     return response
 
 
-@user_passes_test(is_admin)
+@user_passes_test(is_admin, login_url='home')
 def import_attachees(request):
     """Processes an uploaded CSV file to add records to the database"""
     if request.method == 'POST' and request.FILES.get('import_file'):
@@ -166,7 +166,7 @@ def import_attachees(request):
     return redirect('dashboard')
 
 
-@user_passes_test(is_admin)
+@user_passes_test(is_admin, login_url='home')
 def dashboard(request):
     """Enhanced Dashboard handling Export, Clickable Stages, and Search"""
     if request.GET.get('export') == 'true':
@@ -207,7 +207,7 @@ def dashboard(request):
     })
 
 
-@user_passes_test(is_admin)
+@user_passes_test(is_admin, login_url='home')
 def update_status(request, pk):
     """Detailed Email Messaging for Approvals and admittance"""
     if request.method == "POST":
@@ -325,7 +325,7 @@ def draw_footer(p, attachee, current_y):
     p.setFont("Helvetica", 8)
     p.drawCentredString(4.4*inch, footer_y - 0.12*inch, "CEO, Eujim Solutions")
 
-    # --- Compact Official Company Stamp ---
+    # --- Compact Official Company Stamp (Tight margins, Large font) ---
     stamp_x, stamp_y = 3.5*inch, footer_y - 1.4*inch
     s_w, s_h = 2.2*inch, 1.2*inch 
 
@@ -350,7 +350,7 @@ def draw_footer(p, attachee, current_y):
     p.drawCentredString(stamp_x + 1.1*inch, stamp_y + 0.55*inch, dt_txt)
 
     p.setFillColorRGB(0.2, 0.4, 0.7)
-    p.setFont("Helvetica-Bold", 7.2) 
+    p.setFont("Helvetica-Bold", 7.5) 
     p.drawCentredString(stamp_x + 1.1*inch, stamp_y + 0.33*inch, "Email: info@eujimsolutions.com")
     p.drawCentredString(stamp_x + 1.1*inch, stamp_y + 0.15*inch, "TEL: 0113281424/0718099959")
 
@@ -377,12 +377,15 @@ def download_completion_letter(request, attachee_id):
     draw_header_and_border(p)
 
     y_title, y_start = 9.2*inch, 8.9*inch
-    p.setFont("Helvetica-Bold", 13)
-    p.drawCentredString(4.15*inch, y_title, "CERTIFICATE OF COMPLETION")
-
+    
+    # Header Info
     p.setFont("Helvetica", 11)
     p.drawString(0.8*inch, y_start, f"Date: {timezone.now().strftime('%d %b %Y')}")
     p.drawString(0.8*inch, y_start - 0.2*inch, f"Ref: {attachee.tracking_id}")
+
+    # Formal Title
+    p.setFont("Helvetica-Bold", 16)
+    p.drawCentredString(4.15*inch, y_title, "CERTIFICATE OF COMPLETION")
 
     p.setFont("Helvetica-Bold", 11)
     p.drawString(0.8*inch, y_start - 0.6*inch, "TO WHOM IT MAY CONCERN,")
@@ -390,35 +393,35 @@ def download_completion_letter(request, attachee_id):
     p.setFont("Helvetica", 11)
     full_name = f"{attachee.first_name.upper()} {attachee.last_name.upper()}"
 
+    # Certification-focused content with mentorship and skill transformation
     paras = [
         (
-            f"This letter serves to formally certify that {full_name}, a student "
-            f"from {attachee.institution}, has successfully completed {poss} "
-            f"comprehensive industrial attachment at EUJIM SOLUTIONS LIMITED. "
-            f"The program ran from {attachee.start_date.strftime('%d %b %Y')} "
-            f"to {attachee.end_date.strftime('%d %b %Y')}, totaling "
-            f"{duration_weeks} weeks of professional engagement under "
-            f"Reference No: {attachee.tracking_id}."
+            f"This is to certify that {full_name}, a student from {attachee.institution}, "
+            f"has successfully fulfilled all the requirements for the Industrial Attachment "
+            f"program at EUJIM SOLUTIONS LIMITED. The candidate was engaged for a "
+            f"rigorous period of {duration_weeks} weeks, effective from "
+            f"{attachee.start_date.strftime('%d %b %Y')} to {attachee.end_date.strftime('%d %b %Y')}."
         ),
         (
-            f"During this tenure, {attachee.first_name} was fully integrated "
-            f"into our technical operations, specifically focusing on "
-            f"Software Development, ICT Consultancy, and Web Design. "
-            f"{subj} demonstrated an exceptional work ethic, showing great "
-            f"initiative in problem-solving and execution. {subj} proved to "
-            f"be a disciplined, reliable, and technically competent individual "
-            f"who consistently maintained high-quality standards."
+            f"Throughout the attachment, EUJIM SOLUTIONS LIMITED provided a structured mentorship "
+            f"environment designed to bridge the gap between academic theory and industry reality. "
+            f"Under our technical guidance, {attachee.first_name} underwent comprehensive training "
+            f"in Hard Skills, including specialized hands-on experience in Software Development "
+            f"(full-stack logic), ICT Consultancy, and Web Design. Simultaneously, we focused on "
+            f"refining the candidate’s Soft Skills, specifically training {obj} in agile teamwork, "
+            f"professional communication, and critical problem-solving within a high-pressure development environment."
         ),
         (
-            f"This certificate recognizes the successful completion of all "
-            f"attachment requirements. We highly appreciate the contribution "
-            f"{attachee.first_name} made to our team and we wish {obj} "
-            f"continued success in {poss} academic and professional future. "
-            f"For further verification, contact info@eujimsolutions.com."
+            f"By virtue of this successful completion, {attachee.first_name} is hereby "
+            f"recognized for {poss} technical competence, adaptability, and professionalism. "
+            f"The candidate's performance met the required industry standards, demonstrating "
+            f"significant growth and full preparedness for future professional roles in the "
+            f"global technology sector. For any inquiries regarding this certification, "
+            f"please contact info@eujimsolutions.com."
         )
     ]
 
-    y = y_start - 1.0*inch
+    y = y_start - 1.1*inch
     for txt in paras:
         to = p.beginText(0.8*inch, y)
         to.setLeading(14)
@@ -426,7 +429,7 @@ def download_completion_letter(request, attachee_id):
         for line in wrapped:
             to.textLine(line)
         p.drawText(to)
-        y -= (len(wrapped) * 14) + 20
+        y -= (len(wrapped) * 14) + 25
 
     draw_footer(p, attachee, y - 0.2*inch)
     p.showPage()
@@ -545,9 +548,9 @@ def download_gate_pass(request, attachee_id):
     curr_y = y_section1 - 0.35*inch
     for item in details:
         p.drawString(1.0*inch, curr_y, item)
-        curr_y -= 0.22*inch  # Added vertical space between lines
+        curr_y -= 0.22*inch 
         
-    # Section 2: TERMS OF ENGAGEMENT (Added more top margin)
+    # Section 2: TERMS OF ENGAGEMENT
     y_section2 = curr_y - 0.4*inch 
     p.setFont("Helvetica-Bold", 12)
     p.drawString(1.0*inch, y_section2, "TERMS OF ENGAGEMENT")
@@ -563,13 +566,12 @@ def download_gate_pass(request, attachee_id):
     
     p.setFont("Helvetica", 11)
     to = p.beginText(1.0*inch, y_section2 - 0.35*inch)
-    to.setLeading(16)  # Better line spacing for readability
+    to.setLeading(16) 
     wrapped = textwrap.wrap(welcome_text, width=85)
     for line in wrapped:
         to.textLine(line)
     p.drawText(to)
     
-    # Footer Positioning
     draw_footer(p, attachee, y_section2 - 2.5*inch)
     
     p.showPage()
@@ -629,7 +631,7 @@ def download_id_card(request, attachee_id):
     )
 
 
-@user_passes_test(is_admin)
+@user_passes_test(is_admin, login_url='home')
 def approve_student(request, attachee_id):
     attachee = get_object_or_404(Attachee, id=attachee_id)
     attachee.status = 'Approved'
@@ -638,7 +640,7 @@ def approve_student(request, attachee_id):
     return redirect('dashboard')
 
 
-@user_passes_test(is_admin)
+@user_passes_test(is_admin, login_url='home')
 def reject_student(request, attachee_id):
     attachee = get_object_or_404(Attachee, id=attachee_id)
     attachee.status = 'Rejected'
@@ -647,7 +649,7 @@ def reject_student(request, attachee_id):
     return redirect('dashboard')
 
 
-@user_passes_test(is_admin)
+@user_passes_test(is_admin, login_url='home')
 def university_analytics(request):
     stats = Attachee.objects.values('institution').annotate(
         student_count=Count('id')).order_by('-student_count')
