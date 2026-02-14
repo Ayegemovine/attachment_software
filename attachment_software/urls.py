@@ -9,6 +9,7 @@ urlpatterns = [
 ]
 
 # This ensures BOTH the Logo/Contract (Static) and Student Uploads (Media) load
+# Standard practice for local development to serve uploaded files and branding images
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

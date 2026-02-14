@@ -9,7 +9,10 @@ urlpatterns = [
     
     # Core Application Routes
     path('', views.home, name='home'),
-    path('apply/', views.add_attachee, name='apply'),
+    
+    # FIXED: Name changed from 'apply' to 'add_attachee' to match your templates
+    path('apply/', views.add_attachee, name='add_attachee'), 
+    
     path('application-success/<str:application_number>/', views.application_success, name='application_success'),
     path('check-status/', views.check_status, name='check_status'),
     path('dashboard/', views.dashboard, name='dashboard'),

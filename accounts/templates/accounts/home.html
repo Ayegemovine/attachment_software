@@ -1,4 +1,5 @@
 {% extends "accounts/base.html" %}
+{% load static %}
 
 {% block content %}
 <style>
@@ -6,7 +7,7 @@
     .hero-wrapper {
         position: relative;
         min-height: calc(100vh - 250px);
-        overflow: hidden;
+        广泛 overflow: hidden;
         /* Subtle Dot Grid Pattern */
         background-image: radial-gradient(#55D47A 0.5px, transparent 0.5px);
         background-size: 20px 20px;
@@ -109,7 +110,7 @@
 </style>
 
 <div class="hero-wrapper">
-    <img src="https://eujimsolutions.com/wp-content/uploads/2023/01/Eujim-Logo-white.png" class="watermark-logo d-none d-lg-block" style="filter: brightness(0) saturate(100%) invert(0%); width: 600px;">
+    <img src="{% static 'images/logo.png' %}" class="watermark-logo d-none d-lg-block" style="filter: brightness(0) saturate(100%) invert(0%); width: 600px;">
 
     <div class="container hero-container animate__animated animate__fadeIn">
         <div class="row w-100 align-items-center">
@@ -146,7 +147,7 @@
                                 <div class="flex-grow-1 text-start">
                                     <h4 class="fw-bold mb-1">New Application</h4>
                                     <p class="small text-muted mb-3">Register and submit your documents instantly.</p>
-                                    <a href="{% url 'apply' %}" class="btn btn-eujim btn-action shadow-sm text-white">
+                                    <a href="{% url 'add_attachee' %}" class="btn btn-eujim btn-action shadow-sm text-white">
                                         Get Started <i class="fas fa-arrow-right ms-2"></i>
                                     </a>
                                 </div>

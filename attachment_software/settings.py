@@ -10,7 +10,8 @@ SECRET_KEY = 'django-insecure-your-secret-key-change-this-in-production'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.0.105', '127.0.0.1', 'localhost', '*']
+# Allows access via localhost and your Network IP (e.g., 192.168.x.x)
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 INSTALLED_APPS = [
@@ -86,6 +87,10 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+# --- PREVIEW & SECURITY FIX ---
+# Allows the browser to show PDFs inside the Dashboard Modal frame
+X_FRAME_OPTIONS = 'SAMEORIGIN'
+
 # Redirects
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'home'
@@ -95,11 +100,16 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 41943040  # 40MB total request limit
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10485760  # 10MB individual file limit
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# Zoho Email Settings
+# --- EMAIL SETTINGS (GMAIL SMTP) ---
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtppro.zoho.com'
+EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'info@eujimsolutions.com'
-EMAIL_HOST_PASSWORD = 'MKenya@#2023'
-DEFAULT_FROM_EMAIL = 'Eujim Solutions Limited <info@eujimsolutions.com>'
+EMAIL_HOST_USER = 'gracegifty012@gmail.com'
+EMAIL_HOST_PASSWORD = 'hpyu xfbc jfsq nhrc' 
+DEFAULT_FROM_EMAIL = 'Eujim Solutions <gracegifty012@gmail.com>'
+
+# Zoho Email Settings (Commented out as backup)
+# EMAIL_HOST = 'smtppro.zoho.com'
+# EMAIL_HOST_USER = 'info@eujimsolutions.com'
+# EMAIL_HOST_PASSWORD = 'MKenya@#2023'

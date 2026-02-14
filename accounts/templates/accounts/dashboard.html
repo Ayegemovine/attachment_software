@@ -68,7 +68,7 @@
 
     /* 5. MODAL & PREVIEW */
     .modal-xl { max-width: 96%; }
-    #previewContainer { min-height: 550px; background-color: #2c2c2c; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    #previewContainer { min-height: 550px; background-color: #2c2c2c; display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 8px; }
 
     @media (max-width: 1200px) {
         .stats-row { flex-wrap: wrap; }
@@ -249,5 +249,125 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow-lg">
+            <div class="modal-header bg-dark text-white border-0 py-3">
+                <h5 class="modal-title fw-bold px-3"><i class="fas fa-user-circle me-2 text-success"></i>Application: <span id="modalTrackingID"></span></h5>
+                <button type="button" class="btn-close btn-close-white px-3" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="row g-0">
+                    <div class="col-lg-4 border-end bg-light p-4">
+                        <div class="mb-4">
+                            <label class="small text-uppercase fw-bold text-muted mb-2 d-block">Personal Details</label>
+                            <h5 id="modalName" class="fw-bold mb-1"></h5>
+                            <p id="modalEmail" class="text-muted small mb-1"></p>
+                            <p id="modalIDNum" class="text-muted small mb-1"></p>
+                            <p id="modalDates" class="fw-bold small text-primary"></p>
+                        </div>
+
+                        <label class="small text-uppercase fw-bold text-muted mb-3 d-block">Submitted Documents</label>
+                        <div id="docButtons" class="mb-4">
+                        </div>
+
+                        <hr>
+
+                        <form id="statusUpdateForm" method="POST" class="mt-4">
+                            {% csrf_token %}
+                            <div class="mb-3">
+                                <label class="small fw-bold text-dark mb-2">Decision Status</label>
+                                <select name="status" id="modalStatusSelect" class="form-select fw-bold border-2">
+                                    <option value="Pending">Pending</option>
+                                    <option value="Approved">Approved</option>
+                                    <option value="In-Progress">Admitted (In-Progress)</option>
+                                    <option value="Completed">Completed</option>
+                                    <option value="Rejected">Rejected</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="small fw-bold text-dark mb-2">Admin Notes</label>
+                                <textarea name="admin_notes" id="modalAdminNotes" class="form-control" rows="3" placeholder="Add private notes or reason for rejection..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-success w-100 fw-bold py-2 rounded-3 shadow-sm">UPDATE APPLICATION</button>
+                        </form>
+                    </div>
+
+                    <div class="col-lg-8 bg-dark">
+                        <div id="previewContainer">
+                            <div class="text-center text-white-50">
+                                <i class="fas fa-file-pdf fa-4x mb-3"></i>
+                                <p>Select a document from the left to preview it here.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openDetail(data) {
+    // 1. Set text data
+    document.getElementById('modalTrackingID').innerText = data.trackingId;
+    document.getElementById('modalName').innerText = data.firstName + " " + data.lastName;
+    document.getElementById('modalEmail').innerText = "Email: " + data.email;
+    document.getElementById('modalIDNum').innerText = "National ID: " + data.idNum;
+    document.getElementById('modalDates').innerText = "Timeline: " + data.startDate + " to " + data.endDate;
+    
+    // 2. Set form values
+    document.getElementById('modalStatusSelect').value = data.status;
+    document.getElementById('modalAdminNotes').value = data.notes;
+    document.getElementById('statusUpdateForm').action = "/update-status/" + data.id + "/";
+
+    // 3. Handle Documents (Duo Capability: Preview & Download)
+    const docContainer = document.getElementById('docButtons');
+    docContainer.innerHTML = ''; // Clear old buttons
+    
+    const docs = [
+        { label: 'National ID Card', url: data.idUrl, filename: 'NationalID' },
+        { label: 'Intro Letter', url: data.introUrl, filename: 'IntroLetter' },
+        { label: 'Curriculum Vitae (CV)', url: data.cvUrl, filename: 'CV' },
+        { label: 'Signed Contract', url: data.contractUrl, filename: 'Contract' }
+    ];
+
+    docs.forEach(doc => {
+        if (doc.url && doc.url !== '') {
+            // Container for side-by-side buttons
+            let group = document.createElement('div');
+            group.className = "d-flex gap-2 mb-3 w-100";
+
+            // PREVIEW BUTTON
+            let previewBtn = document.createElement('button');
+            previewBtn.className = "btn btn-outline-dark btn-sm flex-grow-1 text-start shadow-sm d-flex align-items-center";
+            previewBtn.innerHTML = `<i class="fas fa-eye me-2 text-danger"></i><span>Preview ${doc.label}</span>`;
+            
+            previewBtn.onclick = () => {
+                // FIXED: Use relative path and iframe to bypass "127.0.0.1 refused to connect"
+                document.getElementById('previewContainer').innerHTML = 
+                    `<iframe src="${doc.url}" width="100%" height="600px" style="border:none;"></iframe>`;
+            };
+
+            // LABELED DOWNLOAD BUTTON
+            let downloadBtn = document.createElement('a');
+            downloadBtn.className = "btn btn-success btn-sm shadow-sm d-flex align-items-center px-3 fw-bold";
+            downloadBtn.innerHTML = `<i class="fas fa-download me-2"></i><span>Download</span>`;
+            downloadBtn.href = doc.url;
+            downloadBtn.download = `${data.trackingId}_${doc.filename}.pdf`;
+            downloadBtn.title = "Download " + doc.label;
+
+            group.appendChild(previewBtn);
+            group.appendChild(downloadBtn);
+            docContainer.appendChild(group);
+        }
+    });
+
+    // 4. Show the modal
+    var myModal = new bootstrap.Modal(document.getElementById('detailModal'));
+    myModal.show();
+}
+</script>
 
 {% endblock %}
